@@ -1,0 +1,11 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
+                    xmlns:local="clr-namespace:BroCompiler">
+    <Style BasedOn="{StaticResource MetroDataGridColumnHeader}" TargetType="{x:Type DataGridColumnHeader}">
+        <Setter Property="controls:ControlsHelper.ContentCharacterCasing" Value="Normal"/>
+    </Style>
+    <Style BasedOn="{StaticResource MetroButton}" TargetType="{x:Type Button}">
+        <Setter Property="controls:ButtonHelper.PreserveTextCase" Value="True"/>
+    </Style>
+</ResourceDictionary>
