@@ -117,11 +117,33 @@ namespace BroDirectX
             IsDirty = true;
         }
 
+        private Rect CalculateAABB()
+        {
+            if (Vertices.Count == 0)
+                return new Rect();
+
+            System.Windows.Point minP = Utils.Convert(Vertices[0].Position);
+            System.Windows.Point maxP = Utils.Convert(Vertices[0].Position);
+
+            foreach (var v in Vertices)
+            {
+                System.Windows.Point p = Utils.Convert(v.Position);
+                minP.X = Math.Min(minP.X, p.X);
+                minP.Y = Math.Min(minP.Y, p.Y);
+                maxP.X = Math.Max(maxP.X, p.X);
+                maxP.Y = Math.Max(maxP.Y, p.Y);
+            }
+
+            return new Rect(minP, maxP);
+        }
+
         public void Update(Device device, bool autoclear = true)
         {
             if (IsDirty || (Vertices.Count == 0 && PrimitiveCount > 0))
             {
                 PrimitiveCount = Geometry == Mesh.GeometryType.Polygons ? Indices.Count / 3 : Indices.Count / 2;
+
+                AABB = CalculateAABB();
 
                 Vertices.Update(device, autoclear);
                 Indices.Update(device, autoclear);
@@ -141,20 +163,7 @@ namespace BroDirectX
 
             Mesh mesh = new Mesh();
 
-            System.Windows.Point minP = Utils.Convert(Vertices[0].Position);
-            System.Windows.Point maxP = Utils.Convert(Vertices[0].Position);
-
-            mesh.AABB = new Rect(Utils.Convert(Vertices[0].Position), new Size());
-            foreach (var v in Vertices)
-            {
-                System.Windows.Point p = Utils.Convert(v.Position);
-                minP.X = Math.Min(minP.X, p.X);
-                minP.Y = Math.Min(minP.Y, p.Y);
-                maxP.X = Math.Max(maxP.X, p.X);
-                maxP.Y = Math.Max(maxP.Y, p.Y);
-            }
-
-            mesh.AABB = new Rect(minP, maxP);
+            mesh.AABB = CalculateAABB();
 
             mesh.VertexBuffer = Vertices.Freeze(device);
             mesh.IndexBuffer = Indices.Freeze(device);

@@ -29,13 +29,17 @@ namespace BroControls
 
         private void InitSurface()
         {
-            Surface.Background = new SolidColorBrush(ContentColor);
-            Surface.OnDraw += Surface_OnDraw;
+            Surface.Canvas.Background = new SolidColorBrush(ContentColor);
+            Surface.OnDraw += Surface_OnDraw1;
+
+            BackgroundMesh = Surface.Canvas.CreateMesh();
+            BackgroundMesh.AddRect(new System.Windows.Rect(0.0, 0.0, 0.5, 0.5), Colors.Red);
+            BackgroundMesh.Update(Surface.Canvas.RenderDevice);
         }
 
         DynamicMesh BackgroundMesh;
 
-        private void Surface_OnDraw(DXCanvas canvas, DXCanvas.Layer layer)
+        private void Surface_OnDraw1(DXCanvas canvas, DXCanvas.Layer layer, ZoomCanvas.ZoomScroll scroll)
         {
             switch (layer)
             {
@@ -49,7 +53,14 @@ namespace BroControls
         {
             InitializeComponent();
             InitColors();
+
+            Loaded += Timeline_Loaded;
+        }
+
+        private void Timeline_Loaded(object sender, System.Windows.RoutedEventArgs e)
+        {
             InitSurface();
+            Surface.Canvas.Update();
         }
 
         private IItem _root;
@@ -64,9 +75,7 @@ namespace BroControls
             
         private void UpdateRoot(IItem item)
         {
-            BackgroundMesh = Surface.CreateMesh();
-            BackgroundMesh.AddRect(new System.Windows.Rect(0.0, 0.0, 0.5, 0.5), Colors.Red);
-            BackgroundMesh.Update(Surface.RenderDevice);
+
 
             if (item == null)
                 return;

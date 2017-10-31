@@ -118,7 +118,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Compilation\BroDirectX\BroDirectX.csproj">
+    <ProjectReference Include="..\BroDirectX\BroDirectX.csproj">
       <Project>{fae987b4-32d8-4dca-9c90-e9a7588359e2}</Project>
       <Name>BroDirectX</Name>
     </ProjectReference>

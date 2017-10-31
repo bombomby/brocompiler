@@ -29,12 +29,14 @@ namespace BroDirectX
         [StructLayout(LayoutKind.Sequential, Size = 32)]
         public struct WorldProjection
         {
-            public SharpDX.Matrix View;
+            public SharpDX.Matrix Projection;
             public SharpDX.Matrix World;
         }
 
-        SharpDX.Matrix UnitView;
-        SharpDX.Matrix PixelView;
+        SharpDX.Matrix UnitProjection;
+        SharpDX.Matrix PixelProjection;
+
+        public System.Windows.Media.Matrix CameraView { get;set; }
 
         WorldProjection WP = new WorldProjection();
         SharpDX.Direct3D11.Buffer WPConstantBuffer;
@@ -126,6 +128,8 @@ namespace BroDirectX
         {
             InitializeComponent();
 
+            CameraView = System.Windows.Media.Matrix.Identity;
+
             RenderCanvas = new RenderControl();
             RenderForm.Child = RenderCanvas;
 
@@ -184,8 +188,8 @@ namespace BroDirectX
             RenderCanvas.Paint += RenderCanvas_Paint;
             RenderCanvas.Resize += RenderCanvas_Resize;
 
-            UnitView = SharpDX.Matrix.Scaling(2.0f, -2.0f, 1.0f);
-            UnitView.TranslationVector = new SharpDX.Vector3(-1.0f, 1.0f, 0.0f);
+            UnitProjection = SharpDX.Matrix.Scaling(2.0f, -2.0f, 1.0f);
+            UnitProjection.TranslationVector = new SharpDX.Vector3(-1.0f, 1.0f, 0.0f);
 
             OnResize();
         }
@@ -205,8 +209,8 @@ namespace BroDirectX
             // Renderview on the backbuffer
             RTView = new RenderTargetView(RenderDevice, BackBuffer);
 
-            PixelView = SharpDX.Matrix.Scaling(2.0f / RenderCanvas.ClientSize.Width, -2.0f / RenderCanvas.ClientSize.Height, 1.0f);
-            PixelView.TranslationVector = new Vector3(-1.0f, 1.0f, 0.0f);
+            PixelProjection = SharpDX.Matrix.Scaling(2.0f / RenderCanvas.ClientSize.Width, -2.0f / RenderCanvas.ClientSize.Height, 1.0f);
+            PixelProjection.TranslationVector = new Vector3(-1.0f, 1.0f, 0.0f);
         }
 
         private void RenderCanvas_Resize(object sender, EventArgs e)
@@ -277,12 +281,13 @@ namespace BroDirectX
         {
             if (mesh != null && mesh.Fragment != null && mesh.VertexBuffer != null && mesh.IndexBuffer != null)
             {
-                WP.View = mesh.Projection == Mesh.ProjectionType.Unit ? UnitView : PixelView;
+                WP.Projection = mesh.Projection == Mesh.ProjectionType.Unit ? UnitProjection : PixelProjection;
 
-                System.Windows.Media.Matrix world = System.Windows.Media.Matrix.Multiply(mesh.LocalTransform, mesh.WorldTransform);
+                System.Windows.Media.Matrix transform = System.Windows.Media.Matrix.Multiply(mesh.LocalTransform, mesh.WorldTransform);
+                System.Windows.Media.Matrix world = (mesh.Projection == Mesh.ProjectionType.Unit) ? System.Windows.Media.Matrix.Multiply(CameraView, transform) : transform;
                 WP.World = Utils.Convert(world);
 
-                SharpDX.Matrix vw = SharpDX.Matrix.Multiply(WP.World, WP.View);
+                SharpDX.Matrix vw = SharpDX.Matrix.Multiply(WP.World, WP.Projection);
                 Vector4 posA = Vector2.Transform(new Vector2((float)mesh.AABB.Left, (float)mesh.AABB.Bottom), vw);
                 Vector4 posB = Vector2.Transform(new Vector2((float)mesh.AABB.Right, (float)mesh.AABB.Top), vw);
 

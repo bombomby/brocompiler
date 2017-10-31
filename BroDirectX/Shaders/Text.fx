@@ -1,6 +1,6 @@
 cbuffer ConstantBuffer : register(b0)
 {
-	matrix View;
+	matrix Projection;
 	matrix World;
 }
 
@@ -25,7 +25,7 @@ PS_IN VS(VS_IN input)
 {
 	PS_IN output = (PS_IN)0;
 
-	float4x4 wv = mul(View, World);
+	float4x4 wv = mul(Projection, World);
 
 	output.pos = mul(wv, float4(input.pos, 0.5f, 1.0f));
 	output.uv = input.uv;

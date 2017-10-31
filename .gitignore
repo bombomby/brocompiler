@@ -1,0 +1,9 @@
+BroCollector/bin/
+BroCollector/obj/
+BroCompiler/bin/
+BroCompiler/obj/
+BroControls/bin/
+BroControls/obj/
+BroDirectX/bin/
+BroDirectX/obj/
+.vs/
