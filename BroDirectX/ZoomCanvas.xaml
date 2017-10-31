@@ -16,7 +16,7 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <local:DXCanvas x:Name="CanvasElement" />
-        <ScrollBar Grid.Column="1" Orientation="Vertical" x:Name="VBar" />
-        <ScrollBar Grid.Row="1" Orientation="Horizontal" x:Name="HBar" />
+        <ScrollBar Grid.Column="1" Orientation="Vertical" x:Name="VBar" Scroll="VBar_Scroll" SmallChange="0.01" LargeChange="0.1" />
+        <ScrollBar Grid.Row="1" Orientation="Horizontal" x:Name="HBar" Scroll="HBar_Scroll" SmallChange="0.01" LargeChange="0.1" />
     </Grid>
 </UserControl>

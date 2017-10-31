@@ -8,6 +8,6 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <BroDX:ZoomCanvas x:Name="Surface" SnapsToDevicePixels="True" Margin="1,0" />
+        <BroDX:ZoomCanvas x:Name="Surface" SnapsToDevicePixels="True" CanZoomY="False" Margin="1,0" />
     </Grid>
 </UserControl>

@@ -75,8 +75,6 @@ namespace BroControls
             
         private void UpdateRoot(IItem item)
         {
-
-
             if (item == null)
                 return;
 

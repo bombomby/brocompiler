@@ -38,7 +38,37 @@ namespace BroDirectX
 
             public Point PanOrigin { get; set; }
             public bool IsPanning { get; set; }
-            public Rect Area { get; set; }
+
+            private Rect area = new Rect(0.0, 0.0, 1.0, 1.0);
+            public Rect Area
+            {
+                get { return area; }
+                set
+                {
+                    area = value;
+
+                    area.Width = Math.Min(1.0, area.Width);
+                    area.Height = Math.Min(1.0, area.Height);
+
+                    Vector shift = new Vector();
+
+                    if (area.Left < 0.0)
+                        shift.X = -area.Left;
+                    else if (area.Right > 1.0)
+                        shift.X = -(area.Right - 1);
+
+                    if (area.Top < 0.0)
+                        shift.Y = -area.Top;
+                    else if (area.Bottom > 1.0)
+                        shift.Y = -(area.Bottom - 1);
+
+                    area.Location = area.Location + shift;
+
+                    AreaChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+
+            public event EventHandler AreaChanged;
 
             public ZoomScroll()
             {
@@ -54,6 +84,8 @@ namespace BroDirectX
             CanZoomY = true;
 
             Scroll = new ZoomScroll();
+            UpdateBars();
+
             Canvas.RenderCanvas.MouseMove += RenderCanvas_MouseMove;
             Canvas.RenderCanvas.MouseWheel += RenderCanvas_MouseWheel;
             Canvas.RenderCanvas.MouseDown += RenderCanvas_MouseDown;
@@ -61,6 +93,17 @@ namespace BroDirectX
             Canvas.RenderCanvas.MouseLeave += RenderCanvas_MouseLeave;
 
             Canvas.OnDraw += Canvas_OnDraw;
+        }
+
+        private void UpdateBars()
+        {
+            VBar.ViewportSize = Scroll.Area.Height;
+            VBar.Value = Scroll.Area.Y;
+            VBar.Maximum = 1.0 - Scroll.Area.Height;
+
+            HBar.ViewportSize = Scroll.Area.Width;
+            HBar.Value = Scroll.Area.X;
+            HBar.Maximum = 1.0 - Scroll.Area.Width;
         }
 
         private void RenderCanvas_MouseLeave(object sender, EventArgs e)
@@ -100,6 +143,7 @@ namespace BroDirectX
 
             Scroll.Area = area;
 
+            UpdateBars();
             Canvas.Update();
         }
 
@@ -116,6 +160,7 @@ namespace BroDirectX
 
                 Scroll.Area = area;
 
+                UpdateBars();
                 Canvas.Update();
             }
         }
@@ -136,6 +181,22 @@ namespace BroDirectX
         {
             InitializeComponent();
             InitInput();
+        }
+
+        private void VBar_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e)
+        {
+            Rect area = Scroll.Area;
+            area.Y = VBar.Value;
+            Scroll.Area = area;
+            Canvas.Update();
+        }
+
+        private void HBar_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e)
+        {
+            Rect area = Scroll.Area;
+            area.X = HBar.Value;
+            Scroll.Area = area;
+            Canvas.Update();
         }
     }
 }

@@ -1,19 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using BroCollector;
 using MahApps.Metro.Controls;
+using BroCompiler.Models;
 
 namespace BroCompiler
 {
@@ -41,8 +30,7 @@ namespace BroCompiler
 
         private void ShowOnTimeline_Click(object sender, RoutedEventArgs e)
         {
-            //ProcessGroupModel group = new ProcessGroupModel("GroupName", Collector.ProcessEvents);
-            Timeline.Root = null;
+            Timeline.Root = new ProcessGroupModel("GroupName", Collector.ProcessEvents);
         }
     }
 }
