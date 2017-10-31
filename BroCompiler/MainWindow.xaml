@@ -17,10 +17,12 @@
         Title="MainWindow" Height="350" Width="525">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition />
-            <RowDefinition />
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <controls:Timeline x:Name="Timeline" />
-        <controls:ProcessListView x:Name="ProcessList" Grid.Column="1" />
+        <controls:ProcessListView x:Name="ProcessList" Grid.Row="1" />
+        <Button x:Name="ShowOnTimeline" Grid.Row="2" Click="ShowOnTimeline_Click" Content="Show on the Timeline" />
     </Grid>
 </MahApps:MetroWindow>

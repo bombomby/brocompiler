@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using BroCollector;
 using MahApps.Metro.Controls;
+using BroCompiler.Model;
 
 namespace BroCompiler
 {
@@ -37,6 +38,12 @@ namespace BroCompiler
             Collector.Start();
 
             ProcessList.DataContext = Collector;
+        }
+
+        private void ShowOnTimeline_Click(object sender, RoutedEventArgs e)
+        {
+            ProcessGroupModel group = new ProcessGroupModel("GroupName", Collector.ProcessEvents);
+            Timeline.Root = group;
         }
     }
 }
