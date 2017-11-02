@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using BroControls;
 using BroCollector;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace BroCompiler.Models
 {
@@ -15,15 +17,15 @@ namespace BroCompiler.Models
         public DateTime Finish { get; set; }
         public List<Timeline.IItem> Children { get; set; }
 
-        public ProcessGroupModel(String name, IList<ProcessData> processes)
+        public ProcessGroupModel(String name, ProcessGroup group)
         {
             Name = name;
 
             Start = DateTime.MaxValue;
             Finish = DateTime.MinValue;
 
-            Children = new List<Timeline.IItem>(processes.Count);
-            foreach (ProcessData process in processes)
+            Children = new List<Timeline.IItem>(group.Processes.Count);
+            foreach (ProcessData process in group.Processes)
             {
                 Children.Add(new ProcessTimelineItem(process));
                 if (process.Start < Start)

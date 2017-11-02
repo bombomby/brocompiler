@@ -10,13 +10,13 @@ namespace BroCollector
 {
     public class DataCollector
     {
-        public ObservableCollection<ProcessData> ProcessEvents { get; set; }
+        public ProcessGroup Group { get; set; }
 
         private ETWCollector ETWCollector { get; set; }
 
         public DataCollector(Config config)
         {
-            ProcessEvents = new ObservableCollection<ProcessData>();
+            Group = new ProcessGroup();
 
             ETWCollector = new ETWCollector();
             ETWCollector.SetProcessFilter(config.ProcessFilters);
@@ -27,7 +27,7 @@ namespace BroCollector
         {
             Application.Current.Dispatcher.Invoke((Action)(() =>
             {
-                ProcessEvents.Add(obj);
+                Group.Add(obj);
             }));
         }
 

@@ -3,6 +3,9 @@ using System.Windows;
 using BroCollector;
 using MahApps.Metro.Controls;
 using BroCompiler.Models;
+using Microsoft.Win32;
+using System.IO;
+using System.Collections.Generic;
 
 namespace BroCompiler
 {
@@ -30,7 +33,45 @@ namespace BroCompiler
 
         private void ShowOnTimeline_Click(object sender, RoutedEventArgs e)
         {
-            Timeline.Root = new ProcessGroupModel("GroupName", Collector.ProcessEvents);
+            Timeline.Root = new ProcessGroupModel("GroupName", Collector.Group);
+        }
+
+        private String SelectFileDialog()
+        {
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.FileName = "Capture";
+            dlg.DefaultExt = ".bro";
+            dlg.Filter = "Bro Capture (.bro)|*.bro";
+            bool? result = dlg.ShowDialog();
+            return (result == true) ? dlg.FileName : null;
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            String file = SelectFileDialog();
+            if (file != null)
+            {
+                using (Stream stream = File.Create(file))
+                {
+                    Serializer.Save(stream, Collector.Group);
+                }
+            }
+        }
+
+        private void Load_Click(object sender, RoutedEventArgs e)
+        {
+            String file = SelectFileDialog();
+            if (file != null)
+            {
+                using (Stream stream = File.OpenRead(file))
+                {
+                    ProcessGroup group = Serializer.Load<ProcessGroup>(stream);
+                    Collector.Group = group;
+
+                    ProcessList.DataContext = null;
+                    ProcessList.DataContext = Collector;
+                }
+            }
         }
     }
 }
