@@ -36,9 +36,21 @@ namespace BroCompiler
             Timeline.Root = new ProcessGroupModel("GroupName", Collector.Group);
         }
 
-        private String SelectFileDialog()
+        enum FileOperation
         {
-            SaveFileDialog dlg = new SaveFileDialog();
+            Save,
+            Load,
+        }
+
+        private String SelectFileDialog(FileOperation op)
+        {
+            FileDialog dlg = null;
+
+            if (op == FileOperation.Save)
+                dlg = new SaveFileDialog();
+            else
+                dlg = new OpenFileDialog();
+
             dlg.FileName = "Capture";
             dlg.DefaultExt = ".bro";
             dlg.Filter = "Bro Capture (.bro)|*.bro";
@@ -48,7 +60,7 @@ namespace BroCompiler
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            String file = SelectFileDialog();
+            String file = SelectFileDialog(FileOperation.Save);
             if (file != null)
             {
                 using (Stream stream = File.Create(file))
@@ -60,8 +72,13 @@ namespace BroCompiler
 
         private void Load_Click(object sender, RoutedEventArgs e)
         {
-            String file = SelectFileDialog();
-            if (file != null)
+            String file = SelectFileDialog(FileOperation.Load);
+            LoadCapture(file);
+        }
+
+        public void LoadCapture(String file)
+        {
+            if (file != null && File.Exists(file))
             {
                 using (Stream stream = File.OpenRead(file))
                 {

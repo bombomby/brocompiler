@@ -5,7 +5,7 @@
     <Style BasedOn="{StaticResource MetroDataGridColumnHeader}" TargetType="{x:Type DataGridColumnHeader}">
         <Setter Property="controls:ControlsHelper.ContentCharacterCasing" Value="Normal"/>
     </Style>
-    <Style BasedOn="{StaticResource MetroButton}" TargetType="{x:Type Button}">
+    <Style BasedOn="{StaticResource SquareButtonStyle}" TargetType="{x:Type Button}">
         <Setter Property="controls:ButtonHelper.PreserveTextCase" Value="True"/>
     </Style>
 </ResourceDictionary>
