@@ -26,15 +26,19 @@ namespace BroCompiler.Models
         }
     }
 
-    public class ProcessGroupModel : Timeline.IItem
+    // [Item]...[Item]...[Item]
+    // .........[Item].........
+    // ....[Item]...[Item].....
+    public class ProcessGroupModel : Timeline.IBoard
     {
         public string Name { get; set; }
+
+        // IBoard
+        public double Height { get; set; }
         public DateTime Start { get; set; }
         public DateTime Finish { get; set; }
-        public List<Timeline.IItem> Children { get; set; }
+        public List<Timeline.IGroup> Children { get; set; }
 
-        public Color Color => throw new NotImplementedException();
-        public double Height => throw new NotImplementedException();
 
         public ProcessGroupModel(String name, ProcessGroup group)
         {
@@ -43,19 +47,65 @@ namespace BroCompiler.Models
             Start = DateTime.MaxValue;
             Finish = DateTime.MinValue;
 
-            Children = new List<Timeline.IItem>(group.Processes.Count);
-            foreach (ProcessData process in group.Processes)
-            {
-                Children.Add(new ProcessTimelineItem(process));
-                if (process.Start < Start)
-                    Start = process.Start;
+            Children = new List<Timeline.IGroup>();
 
-                if (process.Finish > Finish)
-                    Finish = process.Finish;
+            foreach (ProcessData process in group.Processes)
+                Add(process);
+
+            Children.ForEach(g => Height = Height + g.Height);
+        }
+
+        private void Add(ProcessData process)
+        {
+            Timeline.IItem item = new ProcessTimelineItem(process);
+            
+            foreach (Timeline.IGroup group in Children)
+            {
+                if (group.Finish < item.Start)
+                {
+                    (group as ProcessTimeLineGroup).Add(item);
+                    return;
+                }
             }
+
+            ProcessTimeLineGroup newGroup = new ProcessTimeLineGroup();
+            newGroup.Add(item);
+            Children.Add(newGroup);
         }
     }
 
+    // [Item]...[Item]...[Item]
+    public class ProcessTimeLineGroup : Timeline.IGroup
+    {
+        // IGroup
+        public double Height { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+        public List<Timeline.IItem> Children { get; set; }
+
+        public ProcessTimeLineGroup()
+        {
+            Start = DateTime.MaxValue;
+            Finish = DateTime.MinValue;
+            Children = new List<Timeline.IItem>();
+        }
+
+        public void Add(Timeline.IItem item)
+        {
+            Children.Add(item);
+
+            if (item.Start < Start)
+                Start = item.Start;
+
+            if (item.Finish > Finish)
+                Finish = item.Finish;
+
+            if (item.Height > Height)
+                Height = item.Height;
+        }
+    }
+
+    // [Item]
     public class ProcessTimelineItem : Timeline.IItem
     {
         public ProcessData Process { get; set; }
@@ -67,7 +117,7 @@ namespace BroCompiler.Models
         public List<Timeline.IItem> Children { get; set; }
 
         public Color Color => ProcessUtils.CalculateColor(Name);
-        public double Height => 16.0;
+        public double Height => Process.Finish > Process.Start ? 16.0 : 0.0;
 
         public ProcessTimelineItem(ProcessData process)
         {
@@ -78,6 +128,7 @@ namespace BroCompiler.Models
         }
     }
 
+    // [Item] => {A, B, C}
     public class ThreadTimelineItem : Timeline.IItem
     {
         public ThreadData Thread { get; set; }

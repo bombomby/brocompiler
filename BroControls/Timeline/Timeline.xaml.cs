@@ -13,29 +13,45 @@ namespace BroControls
     /// </summary>
     public partial class Timeline : UserControl
     {
-        public interface IItem
+        public interface IDurationable
+        {
+            DateTime Start { get; }
+            DateTime Finish { get; }
+        }
+
+        public interface IItem : IDurationable
         {
             Color Color { get; }
             double Height { get; }
             String Name { get; }
-            DateTime Start { get; }
-            DateTime Finish { get; }
+        }
+
+        public interface IGroup : IDurationable
+        {
+            double Height { get; }
             List<IItem> Children { get; }
         }
 
-        public class Track
+        public interface IBoard : IDurationable
+        {
+            double Height { get; }
+            List<IGroup> Children { get; }
+        }
+
+
+        public class TrackItem
         {
             public IItem DataContext { get; set; }
 
             Mesh Mesh { get; set; }
             Mesh Lines { get; set; }
 
-            public Track(IItem item)
+            public TrackItem(IItem item)
             {
                 DataContext = item;
             }
 
-            internal void Build(DXCanvas canvas)
+            internal void Build(IGroup group, DXCanvas canvas)
             {
                 DynamicMesh meshBuilder = canvas.CreateMesh(DXCanvas.MeshType.Tris);
                 DynamicMesh lineBuilder = canvas.CreateMesh(DXCanvas.MeshType.Lines);
@@ -47,6 +63,15 @@ namespace BroControls
 
                 Mesh = meshBuilder.Freeze(canvas.RenderDevice);
                 Lines = lineBuilder.Freeze(canvas.RenderDevice);
+
+                double duration = (group.Finish - group.Start).TotalSeconds;
+
+                Matrix localTransform = new Matrix();
+                localTransform.Scale((DataContext.Finish - DataContext.Start).TotalSeconds / duration, DataContext.Height / group.Height);
+                localTransform.Translate((DataContext.Start - group.Start).TotalSeconds / duration, 0.0);
+
+                Mesh.LocalTransform = localTransform;
+                Lines.LocalTransform = localTransform;
             }
 
             internal Matrix Transform
@@ -62,6 +87,40 @@ namespace BroControls
             {
                 canvas.Draw(Mesh);
                 canvas.Draw(Lines);
+            }
+        }
+
+        public class Track
+        {
+            public IGroup DataContext { get; set; }
+            public List<TrackItem> Children { get; set; }
+
+            public Track(IGroup group)
+            {
+                DataContext = group;
+
+                Children = new List<TrackItem>();
+                foreach (IItem item in DataContext.Children)
+                    if (item.Finish > item.Start)
+                        Children.Add(new TrackItem(item));
+            }
+
+            internal void Build(DXCanvas canvas)
+            {
+                Children.ForEach(item => item.Build(DataContext, canvas));
+            }
+
+            internal Matrix Transform
+            {
+                set
+                {
+                    Children.ForEach(item => item.Transform = value);
+                }
+            }
+
+            internal void Draw(DXCanvas canvas, DXCanvas.Layer layer)
+            {
+                Children.ForEach(item => item.Draw(canvas, layer));
             }
         }
 
@@ -144,27 +203,27 @@ namespace BroControls
             Surface.Canvas.Update();
         }
 
-        private IItem _root;
-        public IItem Root
+        private IBoard _board;
+        public IBoard Board
         {
-            get { return _root; }
+            get { return _board; }
             set
             {
                 UpdateRoot(value);
             }
         }
             
-        private void UpdateRoot(IItem item)
+        private void UpdateRoot(IBoard board)
         {
-            if (item == null)
+            if (board == null)
                 return;
 
-            _root = item;
+            _board = board;
 
             Tracks = new List<Track>();
 
-            foreach (IItem child in item.Children)
-                Tracks.Add(new Track(child));
+            foreach (IGroup group in board.Children)
+                Tracks.Add(new Track(group));
 
             foreach (Track track in Tracks)
                 track.Build(Surface.Canvas);

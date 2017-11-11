@@ -33,7 +33,7 @@ namespace BroCompiler
 
         private void ShowOnTimeline_Click(object sender, RoutedEventArgs e)
         {
-            Timeline.Root = new ProcessGroupModel("GroupName", Collector.Group);
+            Timeline.Board = new ProcessGroupModel("GroupName", Collector.Group);
         }
 
         enum FileOperation
@@ -88,7 +88,7 @@ namespace BroCompiler
                     ProcessList.DataContext = null;
                     ProcessList.DataContext = Collector;
 
-                    Timeline.Root = new ProcessGroupModel(file, group);
+                    Timeline.Board = new ProcessGroupModel(file, group);
                 }
             }
         }
