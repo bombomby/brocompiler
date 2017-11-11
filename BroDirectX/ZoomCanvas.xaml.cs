@@ -34,6 +34,7 @@ namespace BroDirectX
 
         public class ZoomScroll
         {
+            public Size Size { get; set; }
             public const double ZoomSpeed = 0.01;
 
             public Point PanOrigin { get; set; }
@@ -73,6 +74,21 @@ namespace BroDirectX
             public ZoomScroll()
             {
                 Area = new Rect(0, 0, 1.0, 1.0);
+            }
+
+            public double ToPixel(double x)
+            {
+                return ToPixelLength(x - Area.X);
+            }
+
+            public double ToPixelLength(double length)
+            {
+                return Size.Width * length / Area.Width;
+            }
+
+            public Point ToPixel(Point unit)
+            {
+                return new Point(Size.Width * (unit.X - Area.X) / Area.Width, Size.Height * (unit.Y - Area.Y) / Area.Height);
             }
         }
 
@@ -173,6 +189,8 @@ namespace BroDirectX
             Vector scale = new Vector(1.0 / Scroll.Area.Width, 1.0 / Scroll.Area.Height);
             Matrix cameraView = new Matrix(scale.X, 0, 0, scale.Y, -scale.X * Scroll.Area.Location.X, -scale.Y * Scroll.Area.Location.Y);
             canvas.CameraView = cameraView;
+
+            Scroll.Size = new Size(canvas.RenderCanvas.ClientSize.Width / RenderSettings.DpiScale.X, canvas.RenderCanvas.ClientSize.Height / RenderSettings.DpiScale.Y);
 
             OnDraw?.Invoke(canvas, layer, Scroll);
         }

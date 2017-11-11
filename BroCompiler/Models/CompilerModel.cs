@@ -52,7 +52,16 @@ namespace BroCompiler.Models
             foreach (ProcessData process in group.Processes)
                 Add(process);
 
-            Children.ForEach(g => Height = Height + g.Height);
+            foreach (Timeline.IGroup g in Children)
+            {
+                Height = Height + g.Height;
+
+                if (g.Start < Start)
+                    Start = g.Start;
+
+                if (g.Finish > Finish)
+                    Finish = g.Finish;
+            }
         }
 
         private void Add(ProcessData process)

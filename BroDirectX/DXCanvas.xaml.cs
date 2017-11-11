@@ -36,7 +36,7 @@ namespace BroDirectX
         SharpDX.Matrix UnitProjection;
         SharpDX.Matrix PixelProjection;
 
-        public System.Windows.Media.Matrix CameraView { get;set; }
+        public System.Windows.Media.Matrix CameraView { get; set; }
 
         WorldProjection WP = new WorldProjection();
         SharpDX.Direct3D11.Buffer WPConstantBuffer;
@@ -209,7 +209,7 @@ namespace BroDirectX
             // Renderview on the backbuffer
             RTView = new RenderTargetView(RenderDevice, BackBuffer);
 
-            PixelProjection = SharpDX.Matrix.Scaling(2.0f / RenderCanvas.ClientSize.Width, -2.0f / RenderCanvas.ClientSize.Height, 1.0f);
+            PixelProjection = SharpDX.Matrix.Scaling(2.0f / RenderCanvas.ClientSize.Width, -2.0f / (int)RenderCanvas.ClientSize.Height, 1.0f);
             PixelProjection.TranslationVector = new Vector3(-1.0f, 1.0f, 0.0f);
         }
 

@@ -2,10 +2,16 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
                     xmlns:local="clr-namespace:BroCompiler">
+    <!--<Color x:Key="WhiteColor">Green</Color>-->
+    <!--<Color x:Key="BlackColor">Red</Color>-->
     <Style BasedOn="{StaticResource MetroDataGridColumnHeader}" TargetType="{x:Type DataGridColumnHeader}">
         <Setter Property="controls:ControlsHelper.ContentCharacterCasing" Value="Normal"/>
     </Style>
     <Style BasedOn="{StaticResource SquareButtonStyle}" TargetType="{x:Type Button}">
         <Setter Property="controls:ButtonHelper.PreserveTextCase" Value="True"/>
+    </Style>
+    <Style BasedOn="{StaticResource MetroDataGrid}" TargetType="{x:Type DataGrid}">
+        <Setter Property="AlternationCount" Value="1" />
+        <Setter Property="AlternatingRowBackground" Value="#303030" />
     </Style>
 </ResourceDictionary>

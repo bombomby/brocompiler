@@ -98,7 +98,7 @@ namespace BroDirectX
         public TextManager(DXCanvas canvas)
         {
             double baseFontSize = 16.0;
-            int desiredFontSize = (int)(RenderSettings.dpiScaleY * baseFontSize);
+            int desiredFontSize = (int)(RenderSettings.DpiScale.Y * baseFontSize);
 
             int fontSize = 16;
             int[] sizes = { 16, 20, 24, 28, 32 };
@@ -117,10 +117,10 @@ namespace BroDirectX
             TextMesh.UseAlpha = true;
         }
 
-        public void Draw(System.Windows.Point pos, String text, System.Windows.Media.Color color, TextAlignment alignment = TextAlignment.Left, double maxWidth = double.MaxValue)
+        public void Draw(System.Windows.Point originalPos, String text, System.Windows.Media.Color color, TextAlignment alignment = TextAlignment.Left, double maxWidth = double.MaxValue)
         {
+            System.Windows.Point pos = new System.Windows.Point(originalPos.X * RenderSettings.DpiScale.X, originalPos.Y * RenderSettings.DpiScale.Y);
             Color textColor = Utils.Convert(color);
-
 
             char[] str = text.ToCharArray();
 

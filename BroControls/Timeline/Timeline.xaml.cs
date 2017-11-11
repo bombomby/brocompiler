@@ -13,6 +13,29 @@ namespace BroControls
     /// </summary>
     public partial class Timeline : UserControl
     {
+        public static double NormalizeTime(DateTime point, IDurationable parent)
+        {
+            double duration = (parent.Finish - parent.Start).TotalSeconds;
+            return (point - parent.Start).TotalSeconds / duration;
+        }
+
+        public static Segment NormalizeTime(IDurationable interval, IDurationable parent)
+        {
+            double duration = (parent.Finish - parent.Start).TotalSeconds;
+            return new Segment
+            {
+                Start = (interval.Start - parent.Start).TotalSeconds / duration,
+                Finish = (interval.Finish - parent.Start).TotalSeconds / duration,
+            };
+        }
+
+        public struct Segment
+        {
+            public double Start;
+            public double Finish;
+            public double Length => Finish - Start;
+        }
+
         public interface IDurationable
         {
             DateTime Start { get; }
@@ -41,6 +64,8 @@ namespace BroControls
 
         public class TrackItem
         {
+            const double TextOffset = 1.0;
+
             public IItem DataContext { get; set; }
 
             Mesh Mesh { get; set; }
@@ -83,15 +108,19 @@ namespace BroControls
                 }
             }
 
-            internal void Draw(DXCanvas canvas, DXCanvas.Layer layer)
+            internal void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll, Vector offset)
             {
                 canvas.Draw(Mesh);
                 canvas.Draw(Lines);
+
+                Segment unitBox = NormalizeTime(DataContext, board);
+                canvas.Text.Draw(new Point(scroll.ToPixel(unitBox.Start) + TextOffset, offset.Y) , DataContext.Name, Colors.Black, TextAlignment.Left, scroll.ToPixelLength(unitBox.Length) - TextOffset);
             }
         }
 
         public class Track
         {
+            public Vector Offset { get; set; }
             public IGroup DataContext { get; set; }
             public List<TrackItem> Children { get; set; }
 
@@ -118,9 +147,9 @@ namespace BroControls
                 }
             }
 
-            internal void Draw(DXCanvas canvas, DXCanvas.Layer layer)
+            internal void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll)
             {
-                Children.ForEach(item => item.Draw(canvas, layer));
+                Children.ForEach(item => item.Draw(canvas, layer, board, scroll, Offset));
             }
         }
 
@@ -139,11 +168,6 @@ namespace BroControls
             Surface.OnDraw += Surface_OnDraw;
         }
 
-        private void DrawTracks(DXCanvas canvas, DXCanvas.Layer layer, ZoomCanvas.ZoomScroll scroll)
-        {
-
-        }
-
         private void UpdateTransforms()
         {
             DateTime start = DateTime.MaxValue;
@@ -158,6 +182,7 @@ namespace BroControls
                 if (track.DataContext.Finish > finish)
                     finish = track.DataContext.Finish;
 
+                track.Offset = new Vector(0, totalHeight);
                 totalHeight += track.DataContext.Height;
             }
 
@@ -173,7 +198,7 @@ namespace BroControls
                 height += track.DataContext.Height;
             }
 
-            Surface.Height = totalHeight;
+            Surface.Canvas.Height = totalHeight;
         }
 
         private void Surface_OnDraw(DXCanvas canvas, DXCanvas.Layer layer, ZoomCanvas.ZoomScroll scroll)
@@ -183,7 +208,7 @@ namespace BroControls
                 case DXCanvas.Layer.Normal:
                     foreach (Track track in Tracks)
                     {
-                        track.Draw(canvas, layer);
+                        track.Draw(canvas, layer, Board, scroll);
                     }
                     break;
             }
