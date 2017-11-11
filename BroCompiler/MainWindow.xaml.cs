@@ -87,8 +87,15 @@ namespace BroCompiler
 
                     ProcessList.DataContext = null;
                     ProcessList.DataContext = Collector;
+
+                    Timeline.Root = new ProcessGroupModel(file, group);
                 }
             }
+        }
+
+        private void Clear_Click(object sender, RoutedEventArgs e)
+        {
+            Collector.Group?.Processes.Clear();
         }
     }
 }

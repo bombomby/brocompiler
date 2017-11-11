@@ -77,7 +77,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Timeline.xaml.cs">
+    <Compile Include="Timeline\Timeline.xaml.cs">
       <DependentUpon>Timeline.xaml</DependentUpon>
     </Compile>
     <Page Include="ProcessListView.xaml">
@@ -88,7 +88,7 @@
       <DependentUpon>ProcessListView.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Timeline.xaml">
+    <Page Include="Timeline\Timeline.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

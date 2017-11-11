@@ -11,13 +11,42 @@ using System.Threading.Tasks;
 namespace BroCollector
 {
     [DataContract]
-    public class EventData
+    public class EventData : INotifyPropertyChanged
     {
+        private DateTime start = DateTime.MaxValue;
+        private DateTime finish = DateTime.MinValue;
+
         [DataMember]
-        public DateTime Start { get; set; }
+        public DateTime Start
+        {
+            get { return start; }
+            set
+            {
+                start = value;
+                RaisePropertyChanged("Start");
+                RaisePropertyChanged("Duration");
+            }
+        }
+
         [DataMember]
-        public DateTime Finish { get; set; }
+        public DateTime Finish
+        {
+            get { return finish; }
+            set
+            {
+                finish = value;
+                RaisePropertyChanged("Finish");
+                RaisePropertyChanged("Duration");
+            }
+        }
+
         public TimeSpan Duration => Finish - Start;
+
+        protected void RaisePropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        public event PropertyChangedEventHandler PropertyChanged;
     }
 
     [DataContract]
@@ -28,7 +57,7 @@ namespace BroCollector
     }
 
     [DataContract]
-    public class ProcessData : EventData, INotifyPropertyChanged
+    public class ProcessData : EventData
     {
         [DataMember]
         public UInt64 UniqueKey { get; set; }
@@ -38,8 +67,22 @@ namespace BroCollector
         public String CommandLine { get; set; }
         [DataMember]
         public int ProcessID { get; set; }
+
+        private int? result = null;
         [DataMember]
-        public int Result { get; set; }
+        public int? Result
+        {
+            get
+            {
+                return result;
+            }
+            set
+            {
+                result = value;
+                RaisePropertyChanged("Result");
+            }
+        }
+
         [DataMember]
         public Dictionary<String, String> Artifacts { get; set; }
         [DataMember]
@@ -54,16 +97,14 @@ namespace BroCollector
 
             Artifacts.Add(name, val);
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Artifacts"));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Text"));
+            RaisePropertyChanged("Artifacts");
+            RaisePropertyChanged("Text");
         }
 
         public ProcessData()
         {
             Threads = new List<ThreadData>();
         }
-
-        public event PropertyChangedEventHandler PropertyChanged;
     }
 
     [DataContract]

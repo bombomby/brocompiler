@@ -17,16 +17,17 @@
         Title="MainWindow" Height="350" Width="525">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="1*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="1*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <controls:Timeline x:Name="Timeline" />
         <controls:ProcessListView x:Name="ProcessList" Grid.Row="1" />
-        <UniformGrid Grid.Row="2" Columns="3">
+        <UniformGrid Grid.Row="2" Columns="4">
             <Button x:Name="ShowOnTimeline" Click="ShowOnTimeline_Click" Content="Show on the Timeline" />
             <Button x:Name="Save" Click="Save_Click" Content="Save" />
             <Button x:Name="Load" Click="Load_Click" Content="Load" />
+            <Button x:Name="Clear" Click="Clear_Click" Content="Clear" />
         </UniformGrid>
         
     </Grid>

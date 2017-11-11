@@ -7,15 +7,34 @@ using BroControls;
 using BroCollector;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Windows.Media;
 
 namespace BroCompiler.Models
 {
+    public class ProcessUtils
+    {
+        public static Color CalculateColor(String name)
+        {
+            if (name.Equals("link.exe", StringComparison.InvariantCultureIgnoreCase))
+                return Colors.LimeGreen;
+
+            if (name.Equals("cl.exe", StringComparison.InvariantCultureIgnoreCase))
+                return Colors.Tomato;
+
+            Random rnd = new Random(name.GetHashCode());
+            return new Color() { R = (byte)rnd.Next(), G = (byte)rnd.Next(), B = (byte)rnd.Next() };
+        }
+    }
+
     public class ProcessGroupModel : Timeline.IItem
     {
         public string Name { get; set; }
         public DateTime Start { get; set; }
         public DateTime Finish { get; set; }
         public List<Timeline.IItem> Children { get; set; }
+
+        public Color Color => throw new NotImplementedException();
+        public double Height => throw new NotImplementedException();
 
         public ProcessGroupModel(String name, ProcessGroup group)
         {
@@ -47,6 +66,9 @@ namespace BroCompiler.Models
 
         public List<Timeline.IItem> Children { get; set; }
 
+        public Color Color => ProcessUtils.CalculateColor(Name);
+        public double Height => 16.0;
+
         public ProcessTimelineItem(ProcessData process)
         {
             Process = process;
@@ -65,6 +87,9 @@ namespace BroCompiler.Models
         public DateTime Finish => Thread.Finish;
 
         public List<Timeline.IItem> Children { get; set; }
+
+        public Color Color => throw new NotImplementedException();
+        public double Height => throw new NotImplementedException();
 
         public ThreadTimelineItem(ThreadData thread)
         {

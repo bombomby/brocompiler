@@ -11,9 +11,9 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
                 <DataGridTextColumn Header="ProcessID" Binding="{Binding ProcessID}" />
-                <DataGridTextColumn Header="Threads" Binding="{Binding Threads.Count}" />
-                <DataGridTextColumn Header="CommandLine" Binding="{Binding CommandLine}" />
-                <DataGridTextColumn Header="Start" Binding="{Binding Duration}" />
+                <DataGridTextColumn Header="Threads" Binding="{Binding Threads.Count, Mode=OneWay}" />
+                <DataGridTextColumn Header="CommandLine" Binding="{Binding CommandLine, Mode=OneWay}" />
+                <DataGridTextColumn Header="Start" Binding="{Binding Duration, Mode=OneWay}" />
                 <DataGridTextColumn Header="Text" Binding="{Binding Text}" />
             </DataGrid.Columns>
         </DataGrid>

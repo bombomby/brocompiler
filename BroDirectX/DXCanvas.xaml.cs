@@ -284,7 +284,7 @@ namespace BroDirectX
                 WP.Projection = mesh.Projection == Mesh.ProjectionType.Unit ? UnitProjection : PixelProjection;
 
                 System.Windows.Media.Matrix transform = System.Windows.Media.Matrix.Multiply(mesh.LocalTransform, mesh.WorldTransform);
-                System.Windows.Media.Matrix world = (mesh.Projection == Mesh.ProjectionType.Unit) ? System.Windows.Media.Matrix.Multiply(CameraView, transform) : transform;
+                System.Windows.Media.Matrix world = (mesh.Projection == Mesh.ProjectionType.Unit) ? System.Windows.Media.Matrix.Multiply(transform, CameraView) : transform;
                 WP.World = Utils.Convert(world);
 
                 SharpDX.Matrix vw = SharpDX.Matrix.Multiply(WP.World, WP.Projection);
@@ -348,17 +348,18 @@ namespace BroDirectX
 
         public enum MeshType
         {
-            Poly,
+            Tris,
+            Lines,
             Text,
         }
 
-        public DynamicMesh CreateMesh(MeshType type = MeshType.Poly)
+        public DynamicMesh CreateMesh(MeshType type = MeshType.Tris)
         {
             DynamicMesh mesh = new DynamicMesh(RenderDevice);
 
             switch (type)
             {
-                case MeshType.Poly:
+                case MeshType.Tris:
                     mesh.Fragment = DefaultFragment;
                     mesh.Projection = Mesh.ProjectionType.Unit;
                     break;
@@ -366,6 +367,12 @@ namespace BroDirectX
                 case MeshType.Text:
                     mesh.Fragment = TextFragment;
                     mesh.Projection = Mesh.ProjectionType.Pixel;
+                    break;
+
+                case MeshType.Lines:
+                    mesh.Fragment = DefaultFragment;
+                    mesh.Projection = Mesh.ProjectionType.Unit;
+                    mesh.Geometry = Mesh.GeometryType.Lines;
                     break;
 
                 default:

@@ -94,10 +94,12 @@ namespace BroCollector
                     CommandLine = obj.CommandLine,
                     Start = obj.TimeStamp,
                     ProcessID = obj.ProcessID,
-                    UniqueKey = obj.UniqueProcessKey
+                    UniqueKey = obj.UniqueProcessKey,
                 };
 
                 ProcessDataMap.Add(obj.ProcessID, ev);
+
+                ProcessEvent?.Invoke(ev);
 
                 Task.Run(() => CollectArtifacts(ev));
             }
@@ -111,8 +113,6 @@ namespace BroCollector
                 ev.Finish = obj.TimeStamp;
                 ev.Result = obj.ExitStatus;
                 ProcessDataMap.Remove(obj.ProcessID);
-
-                ProcessEvent?.Invoke(ev);
             }
         }
 
