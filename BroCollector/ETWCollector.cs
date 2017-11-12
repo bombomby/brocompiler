@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
+using Microsoft.Diagnostics.Tracing;
 
 namespace BroCollector
 {
@@ -16,6 +17,8 @@ namespace BroCollector
         Dictionary<int, ProcessData> ProcessDataMap = new Dictionary<int, ProcessData>();
         Dictionary<ulong, IOData> IODataMap = new Dictionary<ulong, IOData>();
 
+        ThreadData[] ActiveCoresMap = new ThreadData[Environment.ProcessorCount];
+        
         HashSet<String> Filters { get; set; }
 
         public event Action<ProcessData> ProcessEvent;
@@ -29,6 +32,8 @@ namespace BroCollector
                                        | KernelTraceEventParser.Keywords.Thread
                                        | KernelTraceEventParser.Keywords.FileIO
                                        | KernelTraceEventParser.Keywords.FileIOInit
+                                       | KernelTraceEventParser.Keywords.SystemCall
+                                       | KernelTraceEventParser.Keywords.ContextSwitch
                                        );
 
             // Processes
@@ -42,9 +47,75 @@ namespace BroCollector
             // IO
             Session.Source.Kernel.FileIORead += Kernel_FileIORead;
             Session.Source.Kernel.FileIOWrite += Kernel_FileIOWrite;
-            Session.Source.Kernel.FileIOOperationEnd += Kernel_FileIOOperationEnd; ;
+            Session.Source.Kernel.FileIOOperationEnd += Kernel_FileIOOperationEnd;
+
+            // SysCalls
+            Session.Source.Kernel.PerfInfoSysClEnter += Kernel_PerfInfoSysClEnter;
+            Session.Source.Kernel.PerfInfoSysClExit += Kernel_PerfInfoSysClExit;
+
+            // Switch Contexts
+            Session.Source.Kernel.ThreadCSwitch += Kernel_ThreadCSwitch;
         }
 
+        private void Kernel_ThreadCSwitch(Microsoft.Diagnostics.Tracing.Parsers.Kernel.CSwitchTraceData obj)
+        {
+            ProcessData newProcess = null;
+            if (ProcessDataMap.TryGetValue(obj.NewProcessID, out newProcess))
+            {
+                ThreadData thread = newProcess.Threads[obj.NewThreadID];
+                thread.WorkIntervals.Add(new WorkIntervalData()
+                {
+                    Start = obj.TimeStamp,
+                    CpuID = obj.ProcessorNumber,
+                    Finish = DateTime.MinValue,
+                });
+
+                ActiveCoresMap[obj.ProcessorNumber] = thread;
+            }
+
+            ProcessData oldProcess = null;
+            if (ProcessDataMap.TryGetValue(obj.OldProcessID, out oldProcess))
+            {
+                ThreadData thread = oldProcess.Threads[obj.OldThreadID];
+                if (thread.WorkIntervals.Count > 0)
+                {
+                    WorkIntervalData interval = thread.WorkIntervals[thread.WorkIntervals.Count - 1];
+                    interval.Finish = obj.TimeStamp;
+                    interval.WaitReason = (int)obj.OldThreadWaitReason;
+                    ActiveCoresMap[interval.CpuID] = null;
+                }
+            }
+        }
+
+        private void Kernel_PerfInfoSysClEnter(Microsoft.Diagnostics.Tracing.Parsers.Kernel.SysCallEnterTraceData obj)
+        {
+            ThreadData thread = ActiveCoresMap[obj.ProcessorNumber];
+            if (thread != null)
+            {
+                thread.SysCalls.Add(new SysCallData()
+                {
+                    Start = obj.TimeStamp,
+                    Finish = DateTime.MinValue,
+                    Address = obj.SysCallAddress
+                });
+            }
+        }
+
+        private void Kernel_PerfInfoSysClExit(Microsoft.Diagnostics.Tracing.Parsers.Kernel.SysCallExitTraceData obj)
+        {
+            ThreadData thread = ActiveCoresMap[obj.ProcessorNumber];
+            if (thread != null)
+            {
+                for (int i = thread.SysCalls.Count - 1; i >= 0; --i)
+                {
+                    if (thread.SysCalls[i].Finish <= thread.SysCalls[i].Start)
+                    {
+                        thread.SysCalls[i].Finish = obj.TimeStamp;
+                        return;
+                    }
+                }
+            }
+        }
 
         private IOData CreateIOData(IOData.Type type, Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
         {
@@ -65,7 +136,7 @@ namespace BroCollector
 
         private void Kernel_FileIORead(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
         {
-            ProcessData process = GetProcessData(obj.ProcessID);
+            ProcessData process = GetProcessData(obj);
             if (process != null)
             {
                 process.IORequests.Add(CreateIOData(IOData.Type.Read, obj));
@@ -74,7 +145,7 @@ namespace BroCollector
 
         private void Kernel_FileIOWrite(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
         {
-            ProcessData process = GetProcessData(obj.ProcessID);
+            ProcessData process = GetProcessData(obj);
             if (process != null)
             {
                 process.IORequests.Add(CreateIOData(IOData.Type.Write, obj));
@@ -91,19 +162,30 @@ namespace BroCollector
             }
         }
 
-        ProcessData GetProcessData(int processId)
+        ProcessData GetProcessData(TraceEvent obj)
         {
             ProcessData process = null;
-            ProcessDataMap.TryGetValue(processId, out process);
+            ProcessDataMap.TryGetValue(obj.ProcessID, out process);
             return process;
+        }
+
+        ThreadData GetThreadData(TraceEvent obj)
+        {
+            ThreadData thread = null;
+            ProcessData process = GetProcessData(obj);
+            if (process != null)
+            {
+                process.Threads.TryGetValue(obj.ThreadID, out thread);
+            }
+            return thread;
         }
 
         private void Kernel_ThreadStart(Microsoft.Diagnostics.Tracing.Parsers.Kernel.ThreadTraceData obj)
         {
-            ProcessData process = null;
-            if (ProcessDataMap.TryGetValue(obj.ProcessID, out process))
+            ProcessData process = GetProcessData(obj);
+            if (process != null)
             {
-                process.Threads.Add(new ThreadData()
+                process.Threads.Add(obj.ThreadID, new ThreadData()
                 {
                     ThreadID = obj.ThreadID,
                     Start = obj.TimeStamp,
@@ -113,18 +195,10 @@ namespace BroCollector
 
         private void Kernel_ThreadStop(Microsoft.Diagnostics.Tracing.Parsers.Kernel.ThreadTraceData obj)
         {
-            ProcessData process = null;
-            if (ProcessDataMap.TryGetValue(obj.ProcessID, out process))
+            ThreadData thread = GetThreadData(obj);
+            if (thread != null)
             {
-                for (int i = process.Threads.Count - 1; i >= 0; --i)
-                {
-                    ThreadData thread = process.Threads[i];
-                    if (thread.ThreadID == obj.ThreadID && thread.Finish < thread.Start)
-                    {
-                        process.Threads[i].Finish = obj.TimeStamp;
-                        break;
-                    }
-                }
+                thread.Finish = obj.TimeStamp;
             }
         }
 

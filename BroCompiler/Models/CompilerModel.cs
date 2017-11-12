@@ -138,7 +138,8 @@ namespace BroCompiler.Models
             Process = process;
 
             Children = new List<Timeline.IItem>(process.Threads.Count);
-            process.Threads.ForEach(thread => Children.Add(new ThreadTimelineItem(thread)));
+            foreach (ThreadData thread in process.Threads.Values)
+                Children.Add(new ThreadTimelineItem(thread));
         }
     }
 
@@ -163,7 +164,7 @@ namespace BroCompiler.Models
 
             Children = new List<Timeline.IGroup>();
 
-            foreach (ThreadData thread in process.Threads)
+            foreach (ThreadData thread in process.Threads.Values)
             {
                 Children.Add(new ThreadTimeLineGroup(thread));
 

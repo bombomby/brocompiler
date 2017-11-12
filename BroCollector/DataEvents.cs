@@ -50,10 +50,35 @@ namespace BroCollector
     }
 
     [DataContract]
+    public class SysCallData : EventData
+    {
+        public ulong Address { get; set; }
+    }
+
+    [DataContract]
+    public class WorkIntervalData : EventData
+    {
+        public int WaitReason { get; set; }
+        public int CpuID { get; set; }
+    }
+
+    [DataContract]
     public class ThreadData : EventData
     {
         [DataMember]
         public int ThreadID { get; set; }
+
+        [DataMember]
+        public List<SysCallData> SysCalls { get; set; }
+
+        [DataMember]
+        public List<WorkIntervalData> WorkIntervals { get; set; }
+
+        public ThreadData()
+        {
+            SysCalls = new List<SysCallData>();
+            WorkIntervals = new List<WorkIntervalData>();
+        }
     }
 
     [DataContract]
@@ -113,7 +138,7 @@ namespace BroCollector
         [DataMember]
         public Dictionary<String, String> Artifacts { get; set; }
         [DataMember]
-        public List<ThreadData> Threads { get; set; }
+        public Dictionary<int, ThreadData> Threads { get; set; }
         [DataMember]
         public List<IOData> IORequests { get; set; }
 
@@ -132,7 +157,7 @@ namespace BroCollector
 
         public ProcessData()
         {
-            Threads = new List<ThreadData>();
+            Threads = new Dictionary<int, ThreadData>();
             IORequests = new List<IOData>();
         }
     }
