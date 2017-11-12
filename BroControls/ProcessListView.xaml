@@ -7,7 +7,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <DataGrid ItemsSource="{Binding Group.Processes}" AutoGenerateColumns="False">
+        <DataGrid ItemsSource="{Binding Group.Processes}" AutoGenerateColumns="False" x:Name="ProcessDataGrid" x:FieldModifier="public">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
                 <DataGridTextColumn Header="ProcessID" Binding="{Binding ProcessID}" />

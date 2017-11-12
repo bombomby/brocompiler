@@ -57,6 +57,33 @@ namespace BroCollector
     }
 
     [DataContract]
+    public class IOData : EventData
+    {
+        [DataContract]
+        public enum Type
+        {
+            Read,
+            Write,
+        }
+
+        [DataMember]
+        public Type IOType { get; set; }
+
+        [DataMember]
+        public int ThreadID { get; set; }
+
+        [DataMember]
+        public int Size { get; set; }
+
+        [DataMember]
+        public long Offset { get; set; }
+
+        [DataMember]
+        public String FileName { get; set; }
+    }
+
+
+    [DataContract]
     public class ProcessData : EventData
     {
         [DataMember]
@@ -87,6 +114,8 @@ namespace BroCollector
         public Dictionary<String, String> Artifacts { get; set; }
         [DataMember]
         public List<ThreadData> Threads { get; set; }
+        [DataMember]
+        public List<IOData> IORequests { get; set; }
 
         public String Text { get { return Artifacts != null ? Artifacts.Values.First() : String.Empty; } }
 
@@ -104,6 +133,7 @@ namespace BroCollector
         public ProcessData()
         {
             Threads = new List<ThreadData>();
+            IORequests = new List<IOData>();
         }
     }
 

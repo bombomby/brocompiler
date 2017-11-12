@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 
 namespace BroCollector
 {
@@ -12,7 +13,9 @@ namespace BroCollector
         TraceEventSession Session { get; set; }
         Task ReaderTask { get; set; }
 
-        Dictionary<int, ProcessData> ProcessDataMap { get; set; }
+        Dictionary<int, ProcessData> ProcessDataMap = new Dictionary<int, ProcessData>();
+        Dictionary<ulong, IOData> IODataMap = new Dictionary<ulong, IOData>();
+
         HashSet<String> Filters { get; set; }
 
         public event Action<ProcessData> ProcessEvent;
@@ -22,15 +25,77 @@ namespace BroCollector
             Session = new TraceEventSession("BroCollector");
             Session.BufferSizeMB = 256;
 
-            Session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread);
+            Session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process
+                                       | KernelTraceEventParser.Keywords.Thread
+                                       | KernelTraceEventParser.Keywords.FileIO
+                                       | KernelTraceEventParser.Keywords.FileIOInit
+                                       );
 
+            // Processes
             Session.Source.Kernel.ProcessStart += Kernel_ProcessStart;
             Session.Source.Kernel.ProcessStop += Kernel_ProcessStop;
 
+            // Threads
             Session.Source.Kernel.ThreadStart += Kernel_ThreadStart;
             Session.Source.Kernel.ThreadStop += Kernel_ThreadStop;
 
-            ProcessDataMap = new Dictionary<int, ProcessData>();
+            // IO
+            Session.Source.Kernel.FileIORead += Kernel_FileIORead;
+            Session.Source.Kernel.FileIOWrite += Kernel_FileIOWrite;
+            Session.Source.Kernel.FileIOOperationEnd += Kernel_FileIOOperationEnd; ;
+        }
+
+
+        private IOData CreateIOData(IOData.Type type, Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
+        {
+            IOData ioData = new IOData()
+            {
+                Start = obj.TimeStamp,
+                FileName = obj.FileName,
+                Offset = obj.Offset,
+                Size = obj.IoSize,
+                ThreadID = obj.ThreadID,
+                IOType = type
+            };
+
+            IODataMap[obj.IrpPtr] = ioData;
+
+            return ioData;
+        }
+
+        private void Kernel_FileIORead(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
+        {
+            ProcessData process = GetProcessData(obj.ProcessID);
+            if (process != null)
+            {
+                process.IORequests.Add(CreateIOData(IOData.Type.Read, obj));
+            }
+        }
+
+        private void Kernel_FileIOWrite(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
+        {
+            ProcessData process = GetProcessData(obj.ProcessID);
+            if (process != null)
+            {
+                process.IORequests.Add(CreateIOData(IOData.Type.Write, obj));
+            }
+        }
+
+        private void Kernel_FileIOOperationEnd(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOOpEndTraceData obj)
+        {
+            IOData ioRequest = null;
+            if (IODataMap.TryGetValue(obj.IrpPtr, out ioRequest))
+            {
+                ioRequest.Finish = obj.TimeStamp;
+                IODataMap.Remove(obj.IrpPtr);
+            }
+        }
+
+        ProcessData GetProcessData(int processId)
+        {
+            ProcessData process = null;
+            ProcessDataMap.TryGetValue(processId, out process);
+            return process;
         }
 
         private void Kernel_ThreadStart(Microsoft.Diagnostics.Tracing.Parsers.Kernel.ThreadTraceData obj)

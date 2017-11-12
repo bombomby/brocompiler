@@ -29,6 +29,16 @@ namespace BroCompiler
             Collector.Start();
 
             ProcessList.DataContext = Collector;
+            ProcessList.ProcessDataGrid.SelectionChanged += ProcessDataGrid_SelectionChanged;
+        }
+
+        private void ProcessDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            ProcessData process = ProcessList.ProcessDataGrid.SelectedItem as ProcessData;
+            if (process != null)
+            {
+                ThreadView.Board = new ThreadGroupModel(process);
+            }
         }
 
         private void ShowOnTimeline_Click(object sender, RoutedEventArgs e)

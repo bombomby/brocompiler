@@ -12,6 +12,6 @@
     </Style>
     <Style BasedOn="{StaticResource MetroDataGrid}" TargetType="{x:Type DataGrid}">
         <Setter Property="AlternationCount" Value="1" />
-        <Setter Property="AlternatingRowBackground" Value="#303030" />
+        <Setter Property="AlternatingRowBackground" Value="{StaticResource GrayBrush10}" />
     </Style>
 </ResourceDictionary>

@@ -11,6 +11,11 @@ using System.Windows.Media;
 
 namespace BroCompiler.Models
 {
+    public class Consts
+    {
+        public const double RowHeight = 16.0;
+    }
+
     public class ProcessUtils
     {
         public static Color CalculateColor(String name)
@@ -126,7 +131,7 @@ namespace BroCompiler.Models
         public List<Timeline.IItem> Children { get; set; }
 
         public Color Color => ProcessUtils.CalculateColor(Name);
-        public double Height => Process.Finish > Process.Start ? 16.0 : 0.0;
+        public double Height => Process.Finish > Process.Start ? Consts.RowHeight : 0.0;
 
         public ProcessTimelineItem(ProcessData process)
         {
@@ -134,6 +139,60 @@ namespace BroCompiler.Models
 
             Children = new List<Timeline.IItem>(process.Threads.Count);
             process.Threads.ForEach(thread => Children.Add(new ThreadTimelineItem(thread)));
+        }
+    }
+
+
+    public class ThreadGroupModel : Timeline.IBoard
+    {
+        public ProcessData DataContext { get; set; }
+
+        // IBoard
+        public double Height { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+        public List<Timeline.IGroup> Children { get; set; }
+
+
+        public ThreadGroupModel(ProcessData process)
+        {
+            DataContext = process;
+
+            Start = DateTime.MaxValue;
+            Finish = DateTime.MinValue;
+
+            Children = new List<Timeline.IGroup>();
+
+            foreach (ThreadData thread in process.Threads)
+            {
+                Children.Add(new ThreadTimeLineGroup(thread));
+
+                if (thread.Start < Start)
+                    Start = thread.Start;
+
+                if (thread.Finish > Finish)
+                    Finish = thread.Finish;
+            }
+
+            Height = Children.Sum(c => Height);
+        }
+    }
+
+    public class ThreadTimeLineGroup : Timeline.IGroup
+    {
+        ThreadData DataContext { get; set; }
+
+        // IGroup
+        public double Height => Consts.RowHeight;
+        public DateTime Start => DataContext.Start;
+        public DateTime Finish => DataContext.Finish;
+        public List<Timeline.IItem> Children { get; set; }
+
+        public ThreadTimeLineGroup(ThreadData thread)
+        {
+            DataContext = thread;
+            Children = new List<Timeline.IItem>();
+            Children.Add(new ThreadTimelineItem(thread));
         }
     }
 
@@ -148,8 +207,8 @@ namespace BroCompiler.Models
 
         public List<Timeline.IItem> Children { get; set; }
 
-        public Color Color => throw new NotImplementedException();
-        public double Height => throw new NotImplementedException();
+        public Color Color => Colors.SkyBlue;
+        public double Height => Consts.RowHeight;
 
         public ThreadTimelineItem(ThreadData thread)
         {
