@@ -74,10 +74,14 @@ namespace BroCollector
         [DataMember]
         public List<WorkIntervalData> WorkIntervals { get; set; }
 
+        [DataMember]
+        public List<IOData> IORequests { get; set; }
+
         public ThreadData()
         {
             SysCalls = new List<SysCallData>();
             WorkIntervals = new List<WorkIntervalData>();
+            IORequests = new List<IOData>();
         }
     }
 
@@ -87,7 +91,9 @@ namespace BroCollector
         [DataContract]
         public enum Type
         {
+            [EnumMember]
             Read,
+            [EnumMember]
             Write,
         }
 
@@ -139,8 +145,6 @@ namespace BroCollector
         public Dictionary<String, String> Artifacts { get; set; }
         [DataMember]
         public Dictionary<int, ThreadData> Threads { get; set; }
-        [DataMember]
-        public List<IOData> IORequests { get; set; }
 
         public String Text { get { return Artifacts != null ? Artifacts.Values.First() : String.Empty; } }
 
@@ -158,7 +162,6 @@ namespace BroCollector
         public ProcessData()
         {
             Threads = new Dictionary<int, ThreadData>();
-            IORequests = new List<IOData>();
         }
     }
 

@@ -27,7 +27,10 @@ namespace BroCollector
         {
             Application.Current.Dispatcher.Invoke((Action)(() =>
             {
-                Group.Add(obj);
+                lock(Group)
+                {
+                    Group.Add(obj);
+                }
             }));
         }
 

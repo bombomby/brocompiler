@@ -29,6 +29,11 @@ namespace BroControls
             };
         }
 
+        public static bool Contains(IDurationable parent, IDurationable child)
+        {
+            return parent.Start <= child.Start && child.Finish <= parent.Finish;
+        }
+
         public struct Segment
         {
             public double Start;
@@ -45,8 +50,10 @@ namespace BroControls
         public interface IItem : IDurationable
         {
             Color Color { get; }
+            double BaseHeight { get; }
             double Height { get; }
             String Name { get; }
+            List<IItem> Children { get; }
         }
 
         public interface IGroup : IDurationable
@@ -81,10 +88,7 @@ namespace BroControls
                 DynamicMesh meshBuilder = canvas.CreateMesh(DXCanvas.MeshType.Tris);
                 DynamicMesh lineBuilder = canvas.CreateMesh(DXCanvas.MeshType.Lines);
 
-                Rect rect = new Rect(0, 0, 1.0, 1.0);
-
-                meshBuilder.AddRect(rect, DataContext.Color);
-                lineBuilder.AddRect(rect, Colors.Black);
+                Build(DataContext, DataContext, 0.0, group.Height, meshBuilder, lineBuilder);
 
                 Mesh = meshBuilder.Freeze(canvas.RenderDevice);
                 Lines = lineBuilder.Freeze(canvas.RenderDevice);
@@ -92,11 +96,31 @@ namespace BroControls
                 double duration = (group.Finish - group.Start).TotalSeconds;
 
                 Matrix localTransform = new Matrix();
-                localTransform.Scale((DataContext.Finish - DataContext.Start).TotalSeconds / duration, DataContext.Height / group.Height);
+                localTransform.Scale((DataContext.Finish - DataContext.Start).TotalSeconds / duration, 1.0);
                 localTransform.Translate((DataContext.Start - group.Start).TotalSeconds / duration, 0.0);
 
                 Mesh.LocalTransform = localTransform;
                 Lines.LocalTransform = localTransform;
+            }
+
+            internal void Build(IItem root, IItem item, double offset, double height, DynamicMesh meshBuilder, DynamicMesh lineBuilder)
+            {
+                double duration = (root.Finish - root.Start).TotalSeconds;
+
+                Rect rect = new Rect((item.Start - root.Start).TotalSeconds / duration, offset / height, (item.Finish - item.Start).TotalSeconds / duration, item.BaseHeight / height);
+
+                meshBuilder.AddRect(rect, item.Color);
+                lineBuilder.AddRect(rect, Colors.Black);
+
+                offset += item.BaseHeight;
+
+                if (item.Children != null)
+                {
+                    foreach (IItem child in item.Children)
+                    {
+                        Build(root, child, offset, height, meshBuilder, lineBuilder);
+                    }
+                }
             }
 
             internal Matrix Transform

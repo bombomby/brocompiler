@@ -75,7 +75,11 @@ namespace BroCompiler
             {
                 using (Stream stream = File.Create(file))
                 {
-                    Serializer.Save(stream, Collector.Group);
+                    lock(Collector.Group)
+                    {
+                        Serializer.Save(stream, Collector.Group);
+                    }
+                    
                 }
             }
         }
@@ -105,7 +109,13 @@ namespace BroCompiler
 
         private void Clear_Click(object sender, RoutedEventArgs e)
         {
-            Collector.Group?.Processes.Clear();
+            if (Collector.Group != null)
+            {
+                lock (Collector.Group)
+                {
+                    Collector.Group.Processes.Clear();
+                }
+            }
         }
     }
 }

@@ -72,6 +72,10 @@ namespace BroCollector
 
                 ActiveCoresMap[obj.ProcessorNumber] = thread;
             }
+            else
+            {
+                ActiveCoresMap[obj.ProcessorNumber] = null;
+            }
 
             ProcessData oldProcess = null;
             if (ProcessDataMap.TryGetValue(obj.OldProcessID, out oldProcess))
@@ -82,7 +86,6 @@ namespace BroCollector
                     WorkIntervalData interval = thread.WorkIntervals[thread.WorkIntervals.Count - 1];
                     interval.Finish = obj.TimeStamp;
                     interval.WaitReason = (int)obj.OldThreadWaitReason;
-                    ActiveCoresMap[interval.CpuID] = null;
                 }
             }
         }
@@ -136,19 +139,19 @@ namespace BroCollector
 
         private void Kernel_FileIORead(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
         {
-            ProcessData process = GetProcessData(obj);
-            if (process != null)
+            ThreadData thread = GetThreadData(obj);
+            if (thread != null)
             {
-                process.IORequests.Add(CreateIOData(IOData.Type.Read, obj));
+                thread.IORequests.Add(CreateIOData(IOData.Type.Read, obj));
             }
         }
 
         private void Kernel_FileIOWrite(Microsoft.Diagnostics.Tracing.Parsers.Kernel.FileIOReadWriteTraceData obj)
         {
-            ProcessData process = GetProcessData(obj);
-            if (process != null)
+            ThreadData thread = GetThreadData(obj);
+            if (thread != null)
             {
-                process.IORequests.Add(CreateIOData(IOData.Type.Write, obj));
+                thread.IORequests.Add(CreateIOData(IOData.Type.Write, obj));
             }
         }
 

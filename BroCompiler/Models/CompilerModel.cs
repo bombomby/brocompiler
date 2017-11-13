@@ -8,6 +8,7 @@ using BroCollector;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Media;
+using System.Diagnostics;
 
 namespace BroCompiler.Models
 {
@@ -132,14 +133,11 @@ namespace BroCompiler.Models
 
         public Color Color => ProcessUtils.CalculateColor(Name);
         public double Height => Process.Finish > Process.Start ? Consts.RowHeight : 0.0;
+        public double BaseHeight => Height;
 
         public ProcessTimelineItem(ProcessData process)
         {
             Process = process;
-
-            Children = new List<Timeline.IItem>(process.Threads.Count);
-            foreach (ThreadData thread in process.Threads.Values)
-                Children.Add(new ThreadTimelineItem(thread));
         }
     }
 
@@ -175,7 +173,7 @@ namespace BroCompiler.Models
                     Finish = thread.Finish;
             }
 
-            Height = Children.Sum(c => Height);
+            Height = Children.Sum(c => c.Height);
         }
     }
 
@@ -184,7 +182,7 @@ namespace BroCompiler.Models
         ThreadData DataContext { get; set; }
 
         // IGroup
-        public double Height => Consts.RowHeight;
+        public double Height { get; set; }
         public DateTime Start => DataContext.Start;
         public DateTime Finish => DataContext.Finish;
         public List<Timeline.IItem> Children { get; set; }
@@ -193,27 +191,90 @@ namespace BroCompiler.Models
         {
             DataContext = thread;
             Children = new List<Timeline.IItem>();
-            Children.Add(new ThreadTimelineItem(thread));
+            Timeline.IItem item = new ThreadTimelineItem(thread);
+            Children.Add(item);
+            Height = item.Height;
         }
     }
 
     // [Item] => {A, B, C}
-    public class ThreadTimelineItem : Timeline.IItem
+    public class ThreadTimelineItem : FunctionTimelineItem
     {
-        public ThreadData Thread { get; set; }
+        public ThreadTimelineItem(ThreadData thread) : base(thread.ThreadID.ToString(), thread)
+        {
+            Color = Colors.SkyBlue;
+            Children = new List<Timeline.IItem>();
 
-        public string Name => Thread.ThreadID.ToString();
-        public DateTime Start => Thread.Start;
-        public DateTime Finish => Thread.Finish;
+            //foreach (WorkIntervalData work in thread.WorkIntervals)
+            //{
+            //    AddChild(new FunctionTimelineItem("Work", work));
+            //}
+
+            foreach (SysCallData call in thread.SysCalls)
+            {
+                AddChild(new FunctionTimelineItem(call.Address.ToString(), call));
+            }
+
+            //thread.IORequests.Sort((a, b) => a.Start.CompareTo(b.Start));
+
+            //foreach (IOData data in thread.IORequests)
+            //{
+            //    AddChild(new FunctionTimelineItem(data.IOType.ToString(), data));
+            //}
+        }
+    }
+
+    // [Funtion] => {A, B, C}
+    public class FunctionTimelineItem : Timeline.IItem
+    {
+        public String Name { get; set; }
+        public EventData DataContext { get; set; }
+
+        public DateTime Start => DataContext.Start;
+        public DateTime Finish => DataContext.Finish;
 
         public List<Timeline.IItem> Children { get; set; }
 
-        public Color Color => Colors.SkyBlue;
-        public double Height => Consts.RowHeight;
+        public Color Color { get; set; }
 
-        public ThreadTimelineItem(ThreadData thread)
+        public double BaseHeight => Consts.RowHeight;
+
+        private double _height = 0.0;
+        public double Height
         {
-            Thread = thread;
+            get
+            {
+                if (_height < BaseHeight)
+                {
+                    _height = (Children.Count > 0 ? Children.Max(c => c.Height) : 0.0) + BaseHeight;
+                }
+
+                return _height;
+            }
+        }
+
+        public FunctionTimelineItem(String name, EventData function)
+        {
+            Color = Colors.Orange;
+            DataContext = function;
+            Name = name;
+            Children = new List<Timeline.IItem>();
+        }
+
+        public void AddChild(FunctionTimelineItem child)
+        {
+            if (child.Finish <= child.Start)
+                return;
+
+            if (Children.Count == 0 || Children.Last().Finish <= child.Start)
+            {
+                Children.Add(child);
+            }
+            else
+            {
+                Debug.Assert(Timeline.Contains(Children.Last(), child), "Function array is not sorted!");
+                (Children.Last() as FunctionTimelineItem).AddChild(child);
+            }
         }
     }
 }
