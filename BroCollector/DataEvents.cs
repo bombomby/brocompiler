@@ -113,6 +113,30 @@ namespace BroCollector
         public String FileName { get; set; }
     }
 
+    [DataContract]
+    public class ImageData : IComparable<ImageData>
+    {
+        [DataMember]
+        public String FileName { get; set; }
+
+        [DataMember]
+        public ulong DefaultBase { get; set; }
+
+        [DataMember]
+        public ulong ImageBase { get; set; }
+
+        [DataMember]
+        public int ImageSize { get; set; }
+
+        [DataMember]
+        public int ImageChecksum { get; set; }
+
+        public int CompareTo(ImageData other)
+        {
+            return ImageBase.CompareTo(other.ImageBase);
+        }
+    }
+
 
     [DataContract]
     public class ProcessData : EventData
@@ -143,8 +167,12 @@ namespace BroCollector
 
         [DataMember]
         public Dictionary<String, String> Artifacts { get; set; }
+
         [DataMember]
         public Dictionary<int, ThreadData> Threads { get; set; }
+
+        [DataMember]
+        public List<ImageData> Images { get; set; }
 
         public String Text { get { return Artifacts != null ? Artifacts.Values.First() : String.Empty; } }
 
@@ -162,6 +190,16 @@ namespace BroCollector
         public ProcessData()
         {
             Threads = new Dictionary<int, ThreadData>();
+            Images = new List<ImageData>();
+        }
+
+        public ImageData GetImageData(ulong address)
+        {
+            foreach (ImageData image in Images)
+                if (image.DefaultBase <= address && address < image.DefaultBase + (ulong)image.ImageSize)
+                    return image;
+
+            return null;
         }
     }
 

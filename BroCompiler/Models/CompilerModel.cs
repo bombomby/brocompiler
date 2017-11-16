@@ -9,6 +9,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Media;
 using System.Diagnostics;
+using BroSymbols;
 
 namespace BroCompiler.Models
 {
@@ -19,6 +20,8 @@ namespace BroCompiler.Models
 
     public class ProcessUtils
     {
+        public static SymbolServer Symbols = new SymbolServer();
+
         public static Color CalculateColor(String name)
         {
             if (name.Equals("link.exe", StringComparison.InvariantCultureIgnoreCase))
@@ -160,11 +163,13 @@ namespace BroCompiler.Models
             Start = DateTime.MaxValue;
             Finish = DateTime.MinValue;
 
+            process.Images.Sort();
+
             Children = new List<Timeline.IGroup>();
 
             foreach (ThreadData thread in process.Threads.Values)
             {
-                Children.Add(new ThreadTimeLineGroup(thread));
+                Children.Add(new ThreadTimeLineGroup(process, thread));
 
                 if (thread.Start < Start)
                     Start = thread.Start;
@@ -179,6 +184,7 @@ namespace BroCompiler.Models
 
     public class ThreadTimeLineGroup : Timeline.IGroup
     {
+        ProcessData Process { get; set; }
         ThreadData DataContext { get; set; }
 
         // IGroup
@@ -187,11 +193,12 @@ namespace BroCompiler.Models
         public DateTime Finish => DataContext.Finish;
         public List<Timeline.IItem> Children { get; set; }
 
-        public ThreadTimeLineGroup(ThreadData thread)
+        public ThreadTimeLineGroup(ProcessData process, ThreadData thread)
         {
+            Process = process;
             DataContext = thread;
             Children = new List<Timeline.IItem>();
-            Timeline.IItem item = new ThreadTimelineItem(thread);
+            Timeline.IItem item = new ThreadTimelineItem(process, thread);
             Children.Add(item);
             Height = item.Height;
         }
@@ -200,7 +207,7 @@ namespace BroCompiler.Models
     // [Item] => {A, B, C}
     public class ThreadTimelineItem : FunctionTimelineItem
     {
-        public ThreadTimelineItem(ThreadData thread) : base(thread.ThreadID.ToString(), thread)
+        public ThreadTimelineItem(ProcessData process, ThreadData thread) : base(thread.ThreadID.ToString(), thread)
         {
             Color = Colors.SkyBlue;
             Children = new List<Timeline.IItem>();
@@ -212,7 +219,10 @@ namespace BroCompiler.Models
 
             foreach (SysCallData call in thread.SysCalls)
             {
-                AddChild(new FunctionTimelineItem(call.Address.ToString(), call));
+                SymbolServer.Symbol symbol = ProcessUtils.Symbols.Resolve(call.Address);
+                //ImageData image = process.GetImageData(call.Address);
+
+                AddChild(new FunctionTimelineItem(symbol.Name, call));
             }
 
             //thread.IORequests.Sort((a, b) => a.Start.CompareTo(b.Start));

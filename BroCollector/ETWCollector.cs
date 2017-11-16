@@ -29,6 +29,7 @@ namespace BroCollector
             Session.BufferSizeMB = 256;
 
             Session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process
+                                       | KernelTraceEventParser.Keywords.ImageLoad
                                        | KernelTraceEventParser.Keywords.Thread
                                        | KernelTraceEventParser.Keywords.FileIO
                                        | KernelTraceEventParser.Keywords.FileIOInit
@@ -39,6 +40,9 @@ namespace BroCollector
             // Processes
             Session.Source.Kernel.ProcessStart += Kernel_ProcessStart;
             Session.Source.Kernel.ProcessStop += Kernel_ProcessStop;
+
+            // Image
+            Session.Source.Kernel.ImageLoad += Kernel_ImageLoad;
 
             // Threads
             Session.Source.Kernel.ThreadStart += Kernel_ThreadStart;
@@ -55,6 +59,22 @@ namespace BroCollector
 
             // Switch Contexts
             Session.Source.Kernel.ThreadCSwitch += Kernel_ThreadCSwitch;
+        }
+
+        private void Kernel_ImageLoad(Microsoft.Diagnostics.Tracing.Parsers.Kernel.ImageLoadTraceData obj)
+        {
+            ProcessData process = GetProcessData(obj);
+            if (process != null)
+            {
+                process.Images.Add(new ImageData()
+                {
+                    FileName = obj.FileName,
+                    DefaultBase = obj.DefaultBase,
+                    ImageBase = obj.ImageBase,
+                    ImageChecksum = obj.ImageChecksum,
+                    ImageSize = obj.ImageSize
+                });
+            }
         }
 
         private void Kernel_ThreadCSwitch(Microsoft.Diagnostics.Tracing.Parsers.Kernel.CSwitchTraceData obj)

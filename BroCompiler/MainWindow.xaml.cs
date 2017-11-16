@@ -22,7 +22,7 @@ namespace BroCompiler
 
             Collector = new DataCollector(new Config()
             {
-                ProcessFilters = new String[] { "notepad.exe", "calc.exe", "CL.exe", "link.exe", "MSBuild.exe" }
+                ProcessFilters = new String[] { "notepad.exe", "calc.exe", "CL.exe", "link.exe", "MSBuild.exe", "BrofilerWindowsTest.exe" }
                 //ProcessFilters = new String[] { "link.exe" }
             });
 
