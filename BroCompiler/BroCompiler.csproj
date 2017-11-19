@@ -140,6 +140,10 @@
       <Project>{d0de9fce-ebb6-4da4-b44b-c05840505dcf}</Project>
       <Name>BroControls</Name>
     </ProjectReference>
+    <ProjectReference Include="..\BroInterop\BroInterop.csproj">
+      <Project>{45203ed6-82d0-49af-a9a8-00d43bcd8d5c}</Project>
+      <Name>BroInterop</Name>
+    </ProjectReference>
     <ProjectReference Include="..\BroSymbols\BroSymbols.csproj">
       <Project>{edd9c5fb-a3a2-417a-a273-3879bf0d7ff9}</Project>
       <Name>BroSymbols</Name>

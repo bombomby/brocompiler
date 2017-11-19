@@ -9,3 +9,5 @@ BroDirectX/obj/
 .vs/
 BroSymbols/bin/
 BroSymbols/obj/
+BroInterop/bin/
+BroInterop/obj/

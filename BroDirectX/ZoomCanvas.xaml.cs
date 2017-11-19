@@ -86,6 +86,11 @@ namespace BroDirectX
                 return Size.Width * length / Area.Width;
             }
 
+            public double ToUnitLength(double pxLength)
+            {
+                return pxLength * Area.Width / Size.Width;
+            }
+
             public Point ToPixel(Point unit)
             {
                 return new Point(Size.Width * (unit.X - Area.X) / Area.Width, Size.Height * (unit.Y - Area.Y) / Area.Height);

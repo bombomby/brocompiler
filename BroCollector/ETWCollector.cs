@@ -35,6 +35,8 @@ namespace BroCollector
                                        | KernelTraceEventParser.Keywords.FileIOInit
                                        | KernelTraceEventParser.Keywords.SystemCall
                                        | KernelTraceEventParser.Keywords.ContextSwitch
+                                       //| KernelTraceEventParser.Keywords.Profile
+                                       //, KernelTraceEventParser.Keywords.Profile
                                        );
 
             // Processes
@@ -59,6 +61,24 @@ namespace BroCollector
 
             // Switch Contexts
             Session.Source.Kernel.ThreadCSwitch += Kernel_ThreadCSwitch;
+
+            // Samples
+            Session.Source.Kernel.StackWalkStack += Kernel_StackWalkStack;
+        }
+
+        private void Kernel_StackWalkStack(Microsoft.Diagnostics.Tracing.Parsers.Kernel.StackWalkStackTraceData obj)
+        {
+            ThreadData thread = GetThreadData(obj);
+            if (thread != null)
+            {
+                CallstackData callstack = new CallstackData() { Timestamp = obj.TimeStamp };
+
+                callstack.Callstack = new UInt64[obj.FrameCount];
+                for (int i = 0; i < obj.FrameCount; ++i)
+                    callstack.Callstack[obj.FrameCount-i-1] = obj.InstructionPointer(i);
+
+                thread.Callstacks.Add(callstack);   
+            }
         }
 
         private void Kernel_ImageLoad(Microsoft.Diagnostics.Tracing.Parsers.Kernel.ImageLoadTraceData obj)
@@ -208,11 +228,11 @@ namespace BroCollector
             ProcessData process = GetProcessData(obj);
             if (process != null)
             {
-                process.Threads.Add(obj.ThreadID, new ThreadData()
+                process.Threads[obj.ThreadID] = new ThreadData()
                 {
                     ThreadID = obj.ThreadID,
                     Start = obj.TimeStamp,
-                });
+                };
             }
         }
 
@@ -230,12 +250,15 @@ namespace BroCollector
             Filters = new HashSet<string>(filters, StringComparer.OrdinalIgnoreCase);
         }
 
+        static char[] CharacterToTrim = { '\"', '\'', ' ', '\t', '\n' };
+
         private static void CollectArtifacts(ProcessData ev)
         {
             for (int start = ev.CommandLine.IndexOf('@'); start != -1; start = ev.CommandLine.IndexOf('@', start + 1))
             {
                 int finish = Math.Max(ev.CommandLine.IndexOf(' ', start), ev.CommandLine.Length);
                 String path = ev.CommandLine.Substring(start + 1, finish - start - 1);
+                path = path.Trim(CharacterToTrim);
 
                 try
                 {

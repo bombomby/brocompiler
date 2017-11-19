@@ -43,6 +43,7 @@ namespace BroCompiler
 
         private void ShowOnTimeline_Click(object sender, RoutedEventArgs e)
         {
+            Collector.LoadCounters();
             Timeline.Board = new ProcessGroupModel("GroupName", Collector.Group);
         }
 
@@ -75,8 +76,9 @@ namespace BroCompiler
             {
                 using (Stream stream = File.Create(file))
                 {
-                    lock(Collector.Group)
+                    lock(Collector.GroupLock)
                     {
+                        Collector.LoadCounters();
                         Serializer.Save(stream, Collector.Group);
                     }
                     
@@ -113,7 +115,7 @@ namespace BroCompiler
             {
                 lock (Collector.Group)
                 {
-                    Collector.Group.Processes.Clear();
+                    Collector.Group.Clear();
                 }
             }
         }

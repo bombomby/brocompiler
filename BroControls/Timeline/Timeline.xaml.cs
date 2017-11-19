@@ -49,11 +49,12 @@ namespace BroControls
 
         public interface IItem : IDurationable
         {
+            String Name { get; }
             Color Color { get; }
             double BaseHeight { get; }
             double Height { get; }
-            String Name { get; }
             List<IItem> Children { get; }
+            bool IsStroke { get; }
         }
 
         public interface IGroup : IDurationable
@@ -75,6 +76,17 @@ namespace BroControls
 
             public IItem DataContext { get; set; }
 
+            public double MaxHeight { get; set; }
+
+            public struct TextEntry
+            {
+                public String Text;
+                public Point Position;
+                public double Width;
+            }
+
+            List<TextEntry> TextBlocks;
+
             Mesh Mesh { get; set; }
             Mesh Lines { get; set; }
 
@@ -85,10 +97,14 @@ namespace BroControls
 
             internal void Build(IGroup group, DXCanvas canvas)
             {
+                TextBlocks = new List<TextEntry>();
+
                 DynamicMesh meshBuilder = canvas.CreateMesh(DXCanvas.MeshType.Tris);
                 DynamicMesh lineBuilder = canvas.CreateMesh(DXCanvas.MeshType.Lines);
 
-                Build(DataContext, DataContext, 0.0, group.Height, meshBuilder, lineBuilder);
+                MaxHeight = group.Height;
+
+                Build(DataContext, DataContext, 0.0, meshBuilder, lineBuilder);
 
                 Mesh = meshBuilder.Freeze(canvas.RenderDevice);
                 Lines = lineBuilder.Freeze(canvas.RenderDevice);
@@ -99,18 +115,35 @@ namespace BroControls
                 localTransform.Scale((DataContext.Finish - DataContext.Start).TotalSeconds / duration, 1.0);
                 localTransform.Translate((DataContext.Start - group.Start).TotalSeconds / duration, 0.0);
 
-                Mesh.LocalTransform = localTransform;
-                Lines.LocalTransform = localTransform;
+                if (Mesh != null)
+                    Mesh.LocalTransform = localTransform;
+
+                if (Lines != null)
+                    Lines.LocalTransform = localTransform;
+
+                TextBlocks.Sort((a, b) => -a.Width.CompareTo(b.Width));
             }
 
-            internal void Build(IItem root, IItem item, double offset, double height, DynamicMesh meshBuilder, DynamicMesh lineBuilder)
+            internal void Build(IItem root, IItem item, double offset, DynamicMesh meshBuilder, DynamicMesh lineBuilder)
             {
                 double duration = (root.Finish - root.Start).TotalSeconds;
 
-                Rect rect = new Rect((item.Start - root.Start).TotalSeconds / duration, offset / height, (item.Finish - item.Start).TotalSeconds / duration, item.BaseHeight / height);
+                Rect rect = new Rect((item.Start - root.Start).TotalSeconds / duration, offset / MaxHeight, (item.Finish - item.Start).TotalSeconds / duration, item.BaseHeight / MaxHeight);
+
+                if (!String.IsNullOrEmpty(item.Name))
+                {
+                    TextBlocks.Add(new TextEntry()
+                    {
+                        Text = item.Name,
+                        Position = rect.TopLeft,
+                        Width = rect.Width,
+                    });
+                }
 
                 meshBuilder.AddRect(rect, item.Color);
-                lineBuilder.AddRect(rect, Colors.Black);
+
+                if (item.IsStroke)
+                    lineBuilder.AddRect(rect, Colors.Black);
 
                 offset += item.BaseHeight;
 
@@ -118,7 +151,7 @@ namespace BroControls
                 {
                     foreach (IItem child in item.Children)
                     {
-                        Build(root, child, offset, height, meshBuilder, lineBuilder);
+                        Build(root, child, offset, meshBuilder, lineBuilder);
                     }
                 }
             }
@@ -127,10 +160,15 @@ namespace BroControls
             {
                 set
                 {
-                    Mesh.WorldTransform = value;
-                    Lines.WorldTransform = value;
+                    if (Mesh != null)
+                        Mesh.WorldTransform = value;
+
+                    if (Lines != null)
+                        Lines.WorldTransform = value;
                 }
             }
+
+            const double TextDrawLimit = 2.0;
 
             internal void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll, Vector offset)
             {
@@ -138,7 +176,20 @@ namespace BroControls
                 canvas.Draw(Lines);
 
                 Segment unitBox = NormalizeTime(DataContext, board);
-                canvas.Text.Draw(new Point(scroll.ToPixel(unitBox.Start) + TextOffset, offset.Y) , DataContext.Name, Colors.Black, TextAlignment.Left, scroll.ToPixelLength(unitBox.Length) - TextOffset);
+
+                double unitThreashold = scroll.ToUnitLength(TextDrawLimit);
+
+                foreach (TextEntry block in TextBlocks)
+                {
+                    double blockWidth = scroll.ToPixelLength(unitBox.Length * block.Width);
+
+                    if (blockWidth < TextDrawLimit)
+                        break;
+
+                    Point pixelPos = new Point(scroll.ToPixel(unitBox.Start + unitBox.Length * block.Position.X) + TextOffset, offset.Y + block.Position.Y * MaxHeight);
+                    canvas.Text.Draw(pixelPos, block.Text, Colors.Black, TextAlignment.Left, blockWidth);
+                }
+                
             }
         }
 

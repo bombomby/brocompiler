@@ -40,6 +40,14 @@ namespace BroCollector
             }
         }
 
+        public bool IsValid
+        {
+            get
+            {
+                return Finish > Start && Start > DateTime.MinValue && Finish < DateTime.MaxValue;
+            }
+        }
+
         public TimeSpan Duration => Finish - Start;
 
         protected void RaisePropertyChanged(string propertyName)
@@ -52,14 +60,27 @@ namespace BroCollector
     [DataContract]
     public class SysCallData : EventData
     {
+        [DataMember]
         public ulong Address { get; set; }
     }
 
     [DataContract]
     public class WorkIntervalData : EventData
     {
+        [DataMember]
         public int WaitReason { get; set; }
+        [DataMember]
         public int CpuID { get; set; }
+    }
+
+    [DataContract]
+    public class CallstackData
+    {
+        [DataMember]
+        public DateTime Timestamp { get; set; }
+
+        [DataMember]
+        public UInt64[] Callstack { get; set; }
     }
 
     [DataContract]
@@ -75,6 +96,9 @@ namespace BroCollector
         public List<WorkIntervalData> WorkIntervals { get; set; }
 
         [DataMember]
+        public List<CallstackData> Callstacks { get; set; }
+
+        [DataMember]
         public List<IOData> IORequests { get; set; }
 
         public ThreadData()
@@ -82,6 +106,7 @@ namespace BroCollector
             SysCalls = new List<SysCallData>();
             WorkIntervals = new List<WorkIntervalData>();
             IORequests = new List<IOData>();
+            Callstacks = new List<CallstackData>();
         }
     }
 
@@ -174,7 +199,7 @@ namespace BroCollector
         [DataMember]
         public List<ImageData> Images { get; set; }
 
-        public String Text { get { return Artifacts != null ? Artifacts.Values.First() : String.Empty; } }
+        public String Text { get { return Artifacts != null ? Artifacts.Values.First().Replace('\n',' ') : String.Empty; } }
 
         public void AddArtifact(String name, String val)
         {
@@ -204,14 +229,56 @@ namespace BroCollector
     }
 
     [DataContract]
+    public struct CounterSample : IComparable<CounterSample>
+    {
+        [DataMember]
+        public DateTime Timestamp { get; set; }
+
+        [DataMember]
+        public float[] Values { get; set; }
+
+        public int CompareTo(CounterSample other)
+        {
+            return Timestamp.CompareTo(other.Timestamp);
+        }
+    }
+
+    [DataContract]
+    public struct CounterDescription
+    {
+        [DataMember]
+        public String Name { get; set; }
+
+    }
+
+    [DataContract]
+    public class CounterGroup
+    {
+        [DataMember]
+        public List<CounterDescription> Descriptions { get; set; }
+
+        [DataMember]
+        public List<CounterSample> Samples { get; set; }
+    }
+
+    [DataContract]
     public class ProcessGroup
     {
         [DataMember]
         public ObservableCollection<ProcessData> Processes { get; set; }
+        
+        [DataMember]
+        public CounterGroup Counters { get; set; }
 
         public void Add(ProcessData process)
         {
             Processes.Add(process);
+        }
+
+        public void Clear()
+        {
+            Processes.Clear();
+            Counters = null;
         }
 
         public ProcessGroup()

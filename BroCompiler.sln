@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BroDirectX", "BroDirectX\Br
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BroSymbols", "BroSymbols\BroSymbols.csproj", "{EDD9C5FB-A3A2-417A-A273-3879BF0D7FF9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BroInterop", "BroInterop\BroInterop.csproj", "{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,14 @@ Global
 		{EDD9C5FB-A3A2-417A-A273-3879BF0D7FF9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EDD9C5FB-A3A2-417A-A273-3879BF0D7FF9}.Release|x64.ActiveCfg = Release|x64
 		{EDD9C5FB-A3A2-417A-A273-3879BF0D7FF9}.Release|x64.Build.0 = Release|x64
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Debug|x64.Build.0 = Debug|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Release|x64.ActiveCfg = Release|Any CPU
+		{45203ED6-82D0-49AF-A9A8-00D43BCD8D5C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

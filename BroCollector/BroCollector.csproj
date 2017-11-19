@@ -69,6 +69,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="DataCollector.cs" />
     <Compile Include="DataEvents.cs" />
+    <Compile Include="DiagnosticsCollector.cs" />
     <Compile Include="ETWCollector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serializer.cs" />

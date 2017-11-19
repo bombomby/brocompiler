@@ -10,6 +10,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Media;
 using System.Diagnostics;
 using BroSymbols;
+using BroInterop;
 
 namespace BroCompiler.Models
 {
@@ -137,6 +138,7 @@ namespace BroCompiler.Models
         public Color Color => ProcessUtils.CalculateColor(Name);
         public double Height => Process.Finish > Process.Start ? Consts.RowHeight : 0.0;
         public double BaseHeight => Height;
+        public bool IsStroke => true;
 
         public ProcessTimelineItem(ProcessData process)
         {
@@ -167,6 +169,12 @@ namespace BroCompiler.Models
 
             Children = new List<Timeline.IGroup>();
 
+            List<SymbolServer.Image> images = new List<SymbolServer.Image>();
+            foreach (ImageData image in process.Images)
+                images.Add(new SymbolServer.Image() { Name = image.FileName, ImageBase = new IntPtr((long)image.ImageBase), ImageSize = (uint)image.ImageSize });
+
+            images.ForEach(img => ProcessUtils.Symbols.LoadModule(img));
+
             foreach (ThreadData thread in process.Threads.Values)
             {
                 Children.Add(new ThreadTimeLineGroup(process, thread));
@@ -177,6 +185,8 @@ namespace BroCompiler.Models
                 if (thread.Finish > Finish)
                     Finish = thread.Finish;
             }
+
+            images.ForEach(img => ProcessUtils.Symbols.UnloadModule(img));
 
             Height = Children.Sum(c => c.Height);
         }
@@ -212,25 +222,65 @@ namespace BroCompiler.Models
             Color = Colors.SkyBlue;
             Children = new List<Timeline.IItem>();
 
-            //foreach (WorkIntervalData work in thread.WorkIntervals)
-            //{
-            //    AddChild(new FunctionTimelineItem("Work", work));
-            //}
+            List<FunctionTimelineItem> toAdd = new List<FunctionTimelineItem>();
 
             foreach (SysCallData call in thread.SysCalls)
             {
-                SymbolServer.Symbol symbol = ProcessUtils.Symbols.Resolve(call.Address);
-                //ImageData image = process.GetImageData(call.Address);
-
-                AddChild(new FunctionTimelineItem(symbol.Name, call));
+                SymbolInfo symbol = new SymbolInfo();
+                ProcessUtils.Symbols.Resolve(call.Address, out symbol);
+                toAdd.Add(new FunctionTimelineItem(symbol.Symbol, call));
             }
 
-            //thread.IORequests.Sort((a, b) => a.Start.CompareTo(b.Start));
+            foreach (IOData data in thread.IORequests)
+            {
+                toAdd.Add(new FunctionTimelineItem(data.FileName, data));
+            }
 
-            //foreach (IOData data in thread.IORequests)
-            //{
-            //    AddChild(new FunctionTimelineItem(data.IOType.ToString(), data));
-            //}
+            //GenerateSampledTree(process, thread);
+
+            toAdd.Sort((a, b) => a.Start.CompareTo(b.Start));
+            toAdd.ForEach(child => AddChild(child));
+
+            for (int i = 0; i < thread.WorkIntervals.Count - 1; ++i)
+            {
+                EventData ev = new EventData() { Start = thread.WorkIntervals[i].Finish, Finish = thread.WorkIntervals[i + 1].Start };
+                if (ev.IsValid)
+                    Children.Add(new WaitTimelineItem(ev));
+            }
+        }
+
+        private void GenerateSampledTree(ProcessData process, ThreadData thread)
+        {
+            List<FunctionTimelineItem> items = new List<FunctionTimelineItem>();
+            List<Tuple<UInt64, EventData>> currentCallstack = new List<Tuple<ulong, EventData>>();
+            SymbolInfo symbol = new SymbolInfo();
+
+            foreach (CallstackData cs in thread.Callstacks)
+            {
+                int matchCount = 0;
+                for (int i = 0; i < Math.Min(currentCallstack.Count, cs.Callstack.Length); ++i)
+                    if (currentCallstack[i].Item1 == cs.Callstack[i])
+                        ++matchCount;
+
+                for (int i = currentCallstack.Count - 1; i >= matchCount; --i)
+                    currentCallstack[i].Item2.Finish = cs.Timestamp;
+
+                currentCallstack.RemoveRange(matchCount, currentCallstack.Count - matchCount);
+
+                for (int i = matchCount; i < cs.Callstack.Length; ++i)
+                {
+                    EventData ev = new EventData() { Start = cs.Timestamp };
+                    currentCallstack.Add(new Tuple<ulong, EventData>(cs.Callstack[i], ev));
+
+                    if (ProcessUtils.Symbols.Resolve(cs.Callstack[i], out symbol))
+                        items.Add(new FunctionTimelineItem(symbol.Symbol, ev));
+                }
+            }
+
+            foreach (var pair in currentCallstack)
+                pair.Item2.Finish = thread.Callstacks.Last().Timestamp;
+
+            items.ForEach(item => AddChild(item));
         }
     }
 
@@ -248,6 +298,8 @@ namespace BroCompiler.Models
         public Color Color { get; set; }
 
         public double BaseHeight => Consts.RowHeight;
+
+        public bool IsStroke => false;
 
         private double _height = 0.0;
         public double Height
@@ -285,6 +337,24 @@ namespace BroCompiler.Models
                 Debug.Assert(Timeline.Contains(Children.Last(), child), "Function array is not sorted!");
                 (Children.Last() as FunctionTimelineItem).AddChild(child);
             }
+        }
+    }
+
+    public class WaitTimelineItem : Timeline.IItem
+    {
+        public EventData DataContext { get; set; }
+        public Color Color => Colors.Tomato;
+        public double BaseHeight => 4.0;
+        public double Height => 4.0;
+        public string Name => null;
+        public List<Timeline.IItem> Children => null;
+        public DateTime Start => DataContext.Start;
+        public DateTime Finish => DataContext.Finish;
+        public bool IsStroke => false;
+
+        public WaitTimelineItem(EventData data)
+        {
+            DataContext = data;
         }
     }
 }
