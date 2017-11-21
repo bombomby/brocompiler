@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="BroControls.ProcessInfo"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:BroControls"
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <TabControl Grid.Column="1">
+            <TabItem Header="File I/O">
+                <DataGrid ItemsSource="{Binding FileIO}" AutoGenerateColumns="False" x:Name="FileIOView">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Name, Mode=OneTime}" Width="1*" Header="File Name" />
+                        <DataGridTextColumn Binding="{Binding TotalDuration, StringFormat=F3, Mode=OneTime}" Width="Auto" Header="Duration(sec)" />
+                        <DataGridTextColumn Binding="{Binding TotalSize, StringFormat=N0, Mode=OneTime}" Width="Auto" Header="Size(bytes)" />
+                        <DataGridTextColumn Binding="{Binding Count, StringFormat=N0, Mode=OneTime}" Width="Auto" Header="Count" />
+                        <DataGridTextColumn Binding="{Binding AvgDuration, StringFormat=F3, Mode=OneTime}" Width="Auto" Header="AvgDuration" />
+                        <DataGridTextColumn Binding="{Binding AvgSize, StringFormat=N0, Mode=OneTime}" Width="Auto" Header="AvgSize" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

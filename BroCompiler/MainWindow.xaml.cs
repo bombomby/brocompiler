@@ -37,7 +37,8 @@ namespace BroCompiler
             ProcessData process = ProcessList.ProcessDataGrid.SelectedItem as ProcessData;
             if (process != null)
             {
-                ThreadView.Board = new ThreadGroupModel(process);
+                ProcessInfoView.DataContext = new ProcessInfoModel(new List<ProcessData> { process });
+                //ThreadView.Board = new ThreadGroupModel(process);
             }
         }
 

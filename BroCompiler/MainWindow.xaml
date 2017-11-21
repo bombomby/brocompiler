@@ -18,12 +18,13 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="1*" />
             <RowDefinition Height="1*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <controls:Timeline x:Name="Timeline" Grid.Row="0" />
-        <controls:Timeline x:Name="ThreadView" Grid.Row="1" />
+        <controls:ProcessInfo x:Name="ProcessInfoView" Grid.Row="1" />
+        <!--<controls:Timeline x:Name="ThreadView" Grid.Row="1" />-->
         <controls:ProcessListView x:Name="ProcessList" Grid.Row="2" />
         <UniformGrid Grid.Row="3" Columns="4">
             <Button x:Name="ShowOnTimeline" Click="ShowOnTimeline_Click" Content="Show on the Timeline" />
