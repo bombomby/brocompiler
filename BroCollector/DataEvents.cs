@@ -48,7 +48,7 @@ namespace BroCollector
             }
         }
 
-        public TimeSpan Duration => Finish - Start;
+        public double Duration => (Finish - Start).TotalSeconds;
 
         protected void RaisePropertyChanged(string propertyName)
         {

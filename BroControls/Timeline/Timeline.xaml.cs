@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using BroDirectX;
 using System.Windows;
+using System.Linq;
 
 namespace BroControls
 {
@@ -63,14 +64,26 @@ namespace BroControls
             List<IItem> Children { get; }
         }
 
+        public interface ILine : IItem
+        {
+            Color StrokeColor { get; }
+            List<KeyValuePair<DateTime, double>> Points { get; }
+        }
+
         public interface IBoard : IDurationable
         {
             double Height { get; }
             List<IGroup> Children { get; }
         }
 
+        public abstract class TimelineItem
+        {
+            public abstract void Build(IGroup group, DXCanvas canvas);
+            public abstract void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll, Vector offset);
+            public abstract Matrix Transform { set; }
+        }
 
-        public class TrackItem
+        public class TrackItem : TimelineItem
         {
             const double TextOffset = 1.0;
 
@@ -95,7 +108,7 @@ namespace BroControls
                 DataContext = item;
             }
 
-            internal void Build(IGroup group, DXCanvas canvas)
+            public override void Build(IGroup group, DXCanvas canvas)
             {
                 TextBlocks = new List<TextEntry>();
 
@@ -156,7 +169,7 @@ namespace BroControls
                 }
             }
 
-            internal Matrix Transform
+            public override Matrix Transform
             {
                 set
                 {
@@ -170,7 +183,7 @@ namespace BroControls
 
             const double TextDrawLimit = 2.0;
 
-            internal void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll, Vector offset)
+            public override void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll, Vector offset)
             {
                 canvas.Draw(Mesh);
                 canvas.Draw(Lines);
@@ -193,20 +206,74 @@ namespace BroControls
             }
         }
 
+        public class ChartItem : TimelineItem
+        {
+            Mesh Mesh { get; set; }
+            Mesh Lines { get; set; }
+            ILine DataContext { get; set; }
+
+            public ChartItem(ILine line)
+            {
+                DataContext = line;
+            }
+
+            public override void Build(IGroup group, DXCanvas canvas)
+            {
+                DynamicMesh meshBuilder = canvas.CreateMesh(DXCanvas.MeshType.Tris);
+                DynamicMesh lineBuilder = canvas.CreateMesh(DXCanvas.MeshType.Lines);
+
+                double duration = (group.Finish - group.Start).TotalSeconds;
+
+                ILine line = DataContext;
+
+                double maxValue = line.Points.Max(p => p.Value);
+                List<Point> points = line.Points.ConvertAll(p => new Point((p.Key - group.Start).TotalSeconds / duration, 1.0 - p.Value / maxValue));
+
+                for (int i = 0; i < points.Count - 1; ++i)
+                    lineBuilder.AddLine(points[i], points[i + 1], line.StrokeColor);
+
+                Mesh = meshBuilder.Freeze(canvas.RenderDevice);
+                Lines = lineBuilder.Freeze(canvas.RenderDevice);
+            }
+
+            public override void Draw(DXCanvas canvas, DXCanvas.Layer layer, IBoard board, ZoomCanvas.ZoomScroll scroll, Vector offset)
+            {
+                canvas.Draw(Mesh);
+                canvas.Draw(Lines);
+            }
+
+            public override Matrix Transform {
+                set {
+                    if (Mesh != null)
+                        Mesh.WorldTransform = value;
+
+                    if (Lines != null)
+                        Lines.WorldTransform = value;
+                }
+            }
+        }
+
         public class Track
         {
             public Vector Offset { get; set; }
             public IGroup DataContext { get; set; }
-            public List<TrackItem> Children { get; set; }
+            public List<TimelineItem> Children { get; set; }
 
             public Track(IGroup group)
             {
                 DataContext = group;
 
-                Children = new List<TrackItem>();
+                Children = new List<TimelineItem>();
                 foreach (IItem item in DataContext.Children)
+                {
                     if (item.Finish > item.Start)
-                        Children.Add(new TrackItem(item));
+                    {
+                        if (item is ILine)
+                            Children.Add(new ChartItem(item as ILine));
+                        else
+                            Children.Add(new TrackItem(item));
+                    }
+                }
             }
 
             internal void Build(DXCanvas canvas)

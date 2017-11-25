@@ -59,6 +59,23 @@ namespace BroCompiler.Models
 
             Children = new List<Timeline.IGroup>();
 
+            if (group.Processes.Count > 0)
+            {
+                Start = group.Processes.Min(p => p.Start);
+                Finish = group.Processes.Max(p => p.Finish);
+            }
+
+            if (group.Counters != null)
+            {
+                for (int i = 0; i < group.Counters.Descriptions.Count; ++i)
+                {
+                    ProcessCountersGroup countersGroup = new ProcessCountersGroup(Start, Finish, group.Counters, i);
+                    countersGroup.Start = Start;
+                    countersGroup.Finish = Finish;
+                    Children.Add(countersGroup);
+                }
+            }
+
             foreach (ProcessData process in group.Processes)
                 Add(process);
 
@@ -72,6 +89,8 @@ namespace BroCompiler.Models
                 if (g.Finish > Finish)
                     Finish = g.Finish;
             }
+
+            Height = Children.Sum(c => c.Height);
         }
 
         private void Add(ProcessData process)
@@ -91,6 +110,54 @@ namespace BroCompiler.Models
             newGroup.Add(item);
             Children.Add(newGroup);
         }
+    }
+
+    // _____/-----\____/----\___/\__
+    public class ProcessCountersGroup : Timeline.IGroup
+    {
+        public double Height { get; set; }
+
+        public List<Timeline.IItem> Children { get; set; }
+
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+
+        public ProcessCountersGroup(DateTime start, DateTime finish, CounterGroup counters, int index)
+        {
+            Start = start;
+            Finish = finish;
+
+            Children = new List<Timeline.IItem>();
+
+            CounterDescription desc = counters.Descriptions[index];
+            ProcessChartLineItem item = new ProcessChartLineItem() { Name = desc.Name, Start = start, Finish = finish };
+
+            for (int x = 0; x < counters.Samples.Count; ++x)
+            {
+                item.Points.Add(new KeyValuePair<DateTime, double>(counters.Samples[x].Timestamp, counters.Samples[x].Values[index]));
+            }
+
+            Children.Add(item);
+
+            Height = Children.Max(c => c.Height);
+        }
+    }
+
+    public class ProcessChartLineItem : Timeline.ILine
+    {
+        public Color StrokeColor => Colors.Red;
+        public List<KeyValuePair<DateTime, double>> Points { get; set; }
+        public string Name { get; set; }
+        public double BaseHeight => Consts.RowHeight * 2;
+        public double Height => BaseHeight;
+        public bool IsStroke => true;
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+
+        public ProcessChartLineItem() { Points = new List<KeyValuePair<DateTime, double>>(); }
+
+        public Color Color => throw new NotImplementedException();
+        public List<Timeline.IItem> Children => throw new NotImplementedException();
     }
 
     // [Item]...[Item]...[Item]

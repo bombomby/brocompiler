@@ -29,7 +29,6 @@ namespace BroCollector
             {
                 return formatter.ReadObject(reader) as T;
             }
-            return null;
         }
     }
 }
